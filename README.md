@@ -1,2 +1,2 @@
-# gmx-v2-subgraph-envio
-This envio indexers indexes GMX smart contract clone the currrent behaviour of GMX subgraph. 
+# GMX v2 subgraph using Envio
+This Envio indexer indexes the GMX v2 smart contract, cloning the current behavior of the GMX v2 subgraph
