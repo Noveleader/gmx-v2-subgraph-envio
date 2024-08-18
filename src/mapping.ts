@@ -3,8 +3,13 @@ import {
   SellUSDG,
   Vault_SellUSDG_eventArgs,
 } from "generated/src/Types.gen";
-import { saveUserGlpGmMigrationStatGlpData } from "./entities/liquidityIncentives";
+import {
+  saveLiquidityProviderIncentivesStat,
+  saveUserGlpGmMigrationStatGlpData,
+  saveUserMarketInfo,
+} from "./entities/incentives/liquidityIncentives";
 import { saveDistribution } from "./entities/distributions";
+import { getOrCreateTransaction } from "./entities/common";
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
@@ -86,6 +91,30 @@ export async function handleBatchSend(event: any, context: any): Promise<void> {
   }
 }
 
-export async function handleMarketTokenTransfer(event:any, context: any): Promise<void> {
-  let marketAddress = event.
+export async function handleMarketTokenTransfer(
+  event: any,
+  context: any
+): Promise<void> {
+  let marketAddress = event.address.toString();
+  let from = event.params.from.toString();
+  let to = event.params.to.toString();
+  let value = event.params.value;
+
+  // `from` user redeems or transfers out GM tokens
+  if (from != ADDRESS_ZERO) {
+    // LiquidityProviderIncentivesStat *should* be updated before UserMarketInfo
+    await saveLiquidityProviderIncentivesStat(
+      from,
+      marketAddress,
+      "1w",
+      value * BigInt(-1),
+      event.blockTimestamp,
+      context
+    );
+
+    await saveUserMarketInfo(from, marketAddress, value * BigInt(-1), context);
+
+    let transaction = getOrCreateTransaction(event, context);
+    
+  }
 }

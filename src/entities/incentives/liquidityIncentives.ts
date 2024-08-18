@@ -1,12 +1,12 @@
 import {
   GlpGmMigrationStat,
+  LiquidityProviderIncentivesStat,
   UserGlpGmMigrationStat,
+  UserMarketInfo,
 } from "generated/src/Types.gen";
-import { timestampToPeriodStart } from "../utils/time";
-import { ZERO } from "../utils/number";
-import { ContractEventPayload, ZeroAddress } from "ethers";
-import { convertAmountToUsd, convertUsdToAmount } from "./prices";
-import { time } from "console";
+import { periodToSeconds, timestampToPeriodStart } from "../../utils/time";
+import { ZERO } from "../../utils/number";
+import { convertAmountToUsd, convertUsdToAmount } from "../prices";
 
 let INCENTIVES_START_TIMESTAMP = 1699401600;
 let ARB_PRECISION = BigInt(10) ** BigInt(18);
@@ -16,6 +16,8 @@ let GLP_GM_MIGRATION_CAP_THRESHOLD_IN_ARB = BigInt(200000000) * ARB_PRECISION; /
 
 let MAX_FEE_BASIS_POINTS_FOR_REBATE = BigInt(25);
 let MAX_FEE_BASIS_POINTS_FOR_REBATE_REDUCED = BigInt(10);
+
+let SECONDS_IN_WEEK = periodToSeconds("1w");
 
 function _incentivesActive(timestamp: number): boolean {
   return timestamp > INCENTIVES_START_TIMESTAMP;
@@ -230,4 +232,145 @@ async function _getMaxFeeBasisPointsForRebate(
   }
 
   return MAX_FEE_BASIS_POINTS_FOR_REBATE_REDUCED;
+}
+
+export async function saveLiquidityProviderIncentivesStat(
+  account: string,
+  marketAddress: string,
+  period: string,
+  marketTokenBalanceDelta: BigInt,
+  timestamp: number,
+  context: any
+): Promise<void> {
+  if (!_incentivesActive(timestamp)) {
+    return;
+  }
+
+  let entity: LiquidityProviderIncentivesStat =
+    await _getOrCreateLiquidityProviderIncentivesStat(
+      account,
+      marketAddress,
+      period,
+      timestamp,
+      context
+    );
+
+  if (entity.updatedTimestamp == 0) {
+    let userMarketInfo = await _getUserMarketInfo(
+      account,
+      marketAddress,
+      context
+    );
+
+    let timeInSeconds = BigInt(timestamp - entity.timestamp);
+
+    entity = {
+      ...entity,
+      cumulativeTimeByMarketTokensBalance:
+        userMarketInfo.marketTokensBalance * timeInSeconds,
+      lastMarketTokensBalance:
+        userMarketInfo.marketTokensBalance +
+        BigInt(marketTokenBalanceDelta.toString()),
+    };
+  } else {
+    let timeInSeconds = BigInt(timestamp - entity.updatedTimestamp);
+    entity = {
+      ...entity,
+      cumulativeTimeByMarketTokensBalance:
+        entity.cumulativeTimeByMarketTokensBalance +
+        entity.lastMarketTokensBalance * timeInSeconds,
+      lastMarketTokensBalance:
+        entity.lastMarketTokensBalance +
+        BigInt(marketTokenBalanceDelta.toString()),
+    };
+  }
+
+  let endTimestamp = entity.timestamp + SECONDS_IN_WEEK;
+  let extrapolatedTimeByMarketTokensBalance =
+    entity.lastMarketTokensBalance * BigInt(endTimestamp - timestamp);
+  entity = {
+    ...entity,
+    weightedAverageMarketTokensBalance:
+      entity.cumulativeTimeByMarketTokensBalance +
+      extrapolatedTimeByMarketTokensBalance / BigInt(SECONDS_IN_WEEK),
+    updatedTimestamp: timestamp,
+  };
+
+  context.LiquidityProviderIncentivesStat.set(entity);
+}
+
+async function _getOrCreateLiquidityProviderIncentivesStat(
+  account: string,
+  marketAddress: string,
+  period: string,
+  timestamp: number,
+  context: any
+): Promise<LiquidityProviderIncentivesStat> {
+  let startTimestamp = timestampToPeriodStart(timestamp, period);
+  let id =
+    account +
+    ":" +
+    marketAddress +
+    ":" +
+    period +
+    ":" +
+    startTimestamp.toString();
+
+  let entity: LiquidityProviderIncentivesStat | undefined =
+    await context.LiquidityProviderIncentivesStat.get(id);
+
+  if (entity == undefined) {
+    entity = {
+      id: id,
+      timestamp: startTimestamp,
+      period: period,
+      account: account,
+      marketAddress: marketAddress,
+      updatedTimestamp: 0,
+      lastMarketTokensBalance: ZERO,
+      cumulativeTimeByMarketTokensBalance: ZERO,
+      weightedAverageMarketTokensBalance: ZERO,
+    };
+  }
+
+  return entity!;
+}
+
+async function _getUserMarketInfo(
+  account: string,
+  marketAddress: string,
+  context: any
+): Promise<UserMarketInfo> {
+  let id = account + ":" + marketAddress;
+  let entity: UserMarketInfo | undefined = context.UserMarketInfo.get(id);
+
+  if (entity == undefined) {
+    entity = {
+      id: id,
+      marketTokensBalance: ZERO,
+      account: account,
+      marketAddress: marketAddress,
+    };
+  }
+
+  return entity!;
+}
+
+export async function saveUserMarketInfo(
+  account: string,
+  marketAddress: string,
+  marketTokensDelta: BigInt,
+  context: any
+): Promise<void> {
+  let entity: UserMarketInfo = await _getUserMarketInfo(
+    account,
+    marketAddress,
+    context
+  );
+  entity = {
+    ...entity,
+    marketTokensBalance:
+      entity.marketTokensBalance + BigInt(marketTokensDelta.toString()),
+  };
+  context.UserMarketInfo.set(entity);
 }

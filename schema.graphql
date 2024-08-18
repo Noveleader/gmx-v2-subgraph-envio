@@ -305,6 +305,7 @@ type ClaimCollateralAction @entity(immutable: true) {
   account: String!
   marketAddresses: [String!]!
   tokenAddresses: [String!]!
+  tokenPrices: [BigInt!]!
   amounts: [BigInt!]!
 
   transaction: Transaction!
@@ -317,6 +318,7 @@ type ClaimAction @entity {
   account: String!
   marketAddresses: [String!]!
   tokenAddresses: [String!]!
+  tokenPrices: [BigInt!]!
   amounts: [BigInt!]!
   isLongOrders: [Boolean!]!
   transaction: Transaction!
@@ -362,6 +364,7 @@ type MarketInfo @entity {
   shortToken: String!
 
   marketTokensSupply: BigInt!
+  marketTokensSupplyFromPoolUpdated: BigInt
 }
 
 type DepositRef @entity {
@@ -567,6 +570,9 @@ type Distribution @entity {
   # 1001 v2, STIP GM incentives airdrop
   # 1002 v2, STIP GLP -> GM migration rebates airdrop
   # 1003 v2, STIP trading incentives airdrop
+
+  # 2001 EIP4844 #1 competition
+  # 2002 EIP4844 #2 competition
   typeId: Int!
 
   transactionHash: String!
