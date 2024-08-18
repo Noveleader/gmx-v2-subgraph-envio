@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
+name: gmx-v2-indexer
+description: This envio index the GMX v2 events
+contracts:
+  - name: EventEmitter
+    handler: ./src/mapping.ts
+    events:
+      - event: EventLog(address msgSender, string eventName, string indexed eventNameHash, (((string,address)[],(string,address[])[]),((string,uint256)[],(string,uint256[])[]),((string,int256)[],(string,int256[])[]),((string,bool)[],(string,bool[])[]),((string,bytes32)[],(string,bytes32[])[]),((string,bytes)[],(string,bytes[])[]),((string,string)[],(string,string[])[])) eventData)
+      - event: EventLog1(address msgSender, string eventName, string indexed eventNameHash, bytes32 indexed topic1, (((string,address)[],(string,address[])[]),((string,uint256)[],(string,uint256[])[]),((string,int256)[],(string,int256[])[]),((string,bool)[],(string,bool[])[]),((string,bytes32)[],(string,bytes32[])[]),((string,bytes)[],(string,bytes[])[]),((string,string)[],(string,string[])[])) eventData)
+      - event: EventLog2(address msgSender, string eventName, string indexed eventNameHash, bytes32 indexed topic1, bytes32 indexed topic2, (((string,address)[],(string,address[])[]),((string,uint256)[],(string,uint256[])[]),((string,int256)[],(string,int256[])[]),((string,bool)[],(string,bool[])[]),((string,bytes32)[],(string,bytes32[])[]),((string,bytes)[],(string,bytes[])[]),((string,string)[],(string,string[])[])) eventData)
+
+  - name: Vault
+    handler: ./src/mapping.ts
+    events:
+      - event: SellUSDG(address account, address token, uint256 usdgAmount, uint256 tokenAmount, uint256 feeBasisPoints)
+  
+  - name: GlpManager
+    handler: ./src/mapping.ts
+    events:
+      - event: RemoveLiquidity(address account, address token, uint256 glpAmount, uint256 aumInUsdg, uint256 glpSupply, uint256 usdgAmount, uint256 amountOut)
+  
+  - name: BatchSender
+    handler: ./src/mapping.ts
+    events:
+      - event: BatchSend(uint256 indexed typeId, address indexed token, address[] accounts, uint256[] amounts)
+
+networks:
+  - id: 42161 # Arbitrum One
+    start_block: 46989339
+    contracts:
+      - name: EventEmitter
+        address: 0xC8ee91A54287DB53897056e12D9819156D3822Fb
+      - name: Vault
+        address: 0x489ee077994B6658eAfA855C308275EAd8097C4A
+      - name: GlpManager
+        address: 0x3963FfC9dff443c2A94f21b129D429891E32ec18
+      - name: BatchSender
+        address: 0x5384E6cAd96B2877B5B3337A277577053BD1941D
+
+  - id: 43114 # Avalanche
+    start_block: 32162455
+    contracts:
+      - name: EventEmitter
+        address: 0xDb17B211c34240B014ab6d61d4A31FA0C0e20c26
+      - name: BatchSender
+        address: 0xF0f929162751DD723fBa5b86A9B3C88Dc1D4957b
