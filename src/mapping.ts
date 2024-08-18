@@ -4,6 +4,7 @@ import {
   Vault_SellUSDG_eventArgs,
 } from "generated/src/Types.gen";
 import { saveUserGlpGmMigrationStatGlpData } from "./entities/liquidityIncentives";
+import { saveDistribution } from "./entities/distributions";
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
@@ -62,4 +63,25 @@ export async function handleRemoveLiquidity(
     sellUsdgEntity.feeBasisPoints,
     context
   );
+}
+
+export async function handleBatchSend(event: any, context: any): Promise<void> {
+  let typeId = event.params.typeId;
+  let token = event.params.token.toString();
+  let receivers = event.params.accounts;
+  let amounts = event.params.amounts;
+
+  for (let i = 0; i < event.params.accounts.length; i++) {
+    let receiver = receivers[i].toString();
+    saveDistribution(
+      receiver,
+      token,
+      amounts[i],
+      Number(typeId),
+      event.transactionHash.toString(),
+      Number(event.blockNumber),
+      Number(event.blockTimestamp),
+      context
+    );
+  }
 }
