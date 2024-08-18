@@ -85,3 +85,7 @@ export async function handleBatchSend(event: any, context: any): Promise<void> {
     );
   }
 }
+
+export async function handleMarketTokenTransfer(event:any, context: any): Promise<void> {
+  let marketAddress = event.
+}
