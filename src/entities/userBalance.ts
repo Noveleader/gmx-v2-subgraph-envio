@@ -3,7 +3,7 @@ import {
   Transaction,
   User,
   LatestUserGmTokensBalanceChangeRef,
-} from "generated";
+} from "generated/src/Types.gen";
 import { ONE, ZERO } from "../utils/number";
 import { getOrCreateCollectedMarketFees } from "./fee";
 

@@ -1,6 +1,7 @@
-import { MarketInfo } from "generated";
+import { MarketInfo } from "generated/src/Types.gen";
 import { marketConfigs } from "../config/markets";
 import { ZERO } from "../utils/number";
+import { EventLog1Item } from "../interfaces/interface";
 
 export async function getMarketInfo(
   marketAddress: string,
@@ -47,4 +48,27 @@ export async function saveMarketInfoTokensSupply(
   };
 
   context.MarketInfo.set(marketInfo);
+}
+
+export async function saveMarketInfo(
+  eventData: EventLog1Item,
+  context: any
+): Promise<any> {
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+  let id = eventDataAddressItemsItems[0];
+  let indexToken = eventDataAddressItemsItems[1];
+  let longToken = eventDataAddressItemsItems[2];
+  let shortToken = eventDataAddressItemsItems[3];
+
+  context.MarketInfo.set({
+    id: id,
+    marketToken: id,
+    indexToken: indexToken,
+    longToken: longToken,
+    shortToken: shortToken,
+    marketTokensSupply: ZERO,
+  });
+
+  let marketInfo: MarketInfo = await context.MarketInfo.get(id);
+  return marketInfo as MarketInfo;
 }

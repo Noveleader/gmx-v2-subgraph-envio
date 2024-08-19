@@ -1,4 +1,4 @@
-import { Distribution } from "generated";
+import { Distribution } from "generated/src/Types.gen";
 import { getTokenPrice } from "./prices";
 
 export async function saveDistribution(

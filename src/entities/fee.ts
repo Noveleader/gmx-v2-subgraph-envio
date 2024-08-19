@@ -1,4 +1,4 @@
-import { CollectedMarketFeesInfo } from "generated";
+import { CollectedMarketFeesInfo } from "generated/src/Types.gen";
 import { timestampToPeriodStart } from "../utils/time";
 import { ZERO } from "../utils/number";
 

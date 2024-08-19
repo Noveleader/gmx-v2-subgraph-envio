@@ -1,4 +1,9 @@
-import { Transaction } from "generated";
+import { Transaction } from "generated/src/Types.gen";
+
+export function getIdFromEvent(event: any): string {
+  return event.transaction.hash.toHexString() + ":" + event.logIndex.toString();
+}
+
 export async function getOrCreateTransaction(
   event: any,
   context: any

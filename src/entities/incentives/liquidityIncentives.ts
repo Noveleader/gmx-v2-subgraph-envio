@@ -7,6 +7,7 @@ import {
 import { periodToSeconds, timestampToPeriodStart } from "../../utils/time";
 import { ZERO } from "../../utils/number";
 import { convertAmountToUsd, convertUsdToAmount } from "../prices";
+import { ZeroAddress } from "ethers";
 
 let INCENTIVES_START_TIMESTAMP = 1699401600;
 let ARB_PRECISION = BigInt(10) ** BigInt(18);
@@ -373,4 +374,48 @@ export async function saveUserMarketInfo(
       entity.marketTokensBalance + BigInt(marketTokensDelta.toString()),
   };
   context.UserMarketInfo.set(entity);
+}
+
+export async function saveUserGlpGmMigrationStatGmData(
+  account: string,
+  timestamp: number,
+  depositUsd: BigInt,
+  context: any
+): Promise<void> {
+  if (!_incentivesActive(timestamp)) {
+    return;
+  }
+
+  let entity = await _getOrCreateUserGlpGmMigrationStatGlpData(
+    account,
+    timestamp,
+    context
+  );
+
+  let eligibleDiff = await _getCappedEligibleRedemptionDiff(
+    entity.gmDepositUsd,
+    entity.gmDepositUsd + BigInt(depositUsd.toString()),
+    entity.glpRedemptionUsd,
+    context
+  );
+
+  entity = {
+    ...entity,
+    gmDepositUsd: entity.gmDepositUsd + BigInt(depositUsd.toString()),
+  };
+
+  if (BigInt(eligibleDiff.inArb.toString()) > BigInt(ZERO.toString())) {
+    entity = {
+      ...entity,
+      eligibleRedemptionInArb:
+        entity.eligibleRedemptionInArb + BigInt(eligibleDiff.inArb.toString()),
+      eligibleRedemptionUsd:
+        entity.eligibleRedemptionUsd + BigInt(eligibleDiff.usd.toString()),
+      eligibleUpdatedTimestamp: timestamp,
+    };
+  }
+
+  context.UserGlpGmMigrationStat.set(entity);
+
+  await _saveGlpGmMigrationStat(eligibleDiff, context);
 }

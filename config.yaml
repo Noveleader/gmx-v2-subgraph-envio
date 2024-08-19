@@ -15,19 +15,19 @@ contracts:
     handler: ./src/mapping.ts
     events:
       - event: SellUSDG(address account, address token, uint256 usdgAmount, uint256 tokenAmount, uint256 feeBasisPoints)
-  
+
   - name: GlpManager
     abi_file_path: ./abis/GlpManager.json
     handler: ./src/mapping.ts
     events:
       - event: RemoveLiquidity(address account, address token, uint256 glpAmount, uint256 aumInUsdg, uint256 glpSupply, uint256 usdgAmount, uint256 amountOut)
-  
+
   - name: BatchSender
     abi_file_path: ./abis/BatchSender.json
     handler: ./src/mapping.ts
     events:
       - event: BatchSend(uint256 indexed typeId, address indexed token, address[] accounts, uint256[] amounts)
-  
+
   - name: MarketTokenTemplate
     abi_file_path: ./abis/MarketToken.json
     handler: ./src/mapping.ts
@@ -56,3 +56,10 @@ networks:
       - name: BatchSender
         address: 0xF0f929162751DD723fBa5b86A9B3C88Dc1D4957b
       - name: MarketTokenTemplate
+
+field_selection:
+  transaction_fields:
+    - "hash"
+    - "from"
+    - "to"
+    - "transactionIndex"

@@ -4,9 +4,8 @@ export interface EventLogItem {
   eventNameHash: string;
   msgSender: string;
   transactionHash: string;
-  blockNumber: string;
-  blockTimestamp: string;
-  db_write_timestamp: string;
+  blockNumber: BigInt;
+  blockTimestamp: BigInt;
   eventData_addressItems_arrayItems: string[];
   eventData_addressItems_items: string[];
   eventData_boolItems_arrayItems: string[];
@@ -30,9 +29,8 @@ export interface EventLog1Item {
   msgSender: string;
   topic1: string;
   transactionHash: string;
-  blockNumber: string;
-  blockTimestamp: string;
-  db_write_timestamp: string;
+  blockNumber: BigInt;
+  blockTimestamp: BigInt;
   eventData_addressItems_arrayItems: string[];
   eventData_addressItems_items: string[];
   eventData_boolItems_arrayItems: string[];
@@ -57,9 +55,8 @@ export interface EventLog2Item {
   topic1: string;
   topic2: string;
   transactionHash: string;
-  blockNumber: string;
-  blockTimestamp: string;
-  db_write_timestamp: string;
+  blockNumber: BigInt;
+  blockTimestamp: BigInt;
   eventData_addressItems_arrayItems: string[];
   eventData_addressItems_items: string[];
   eventData_boolItems_arrayItems: string[];
