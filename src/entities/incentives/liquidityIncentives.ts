@@ -81,7 +81,7 @@ export async function saveUserGlpGmMigrationStatGlpData(
 
   context.UserGlpGmMigrationStat.set(entity);
 
-  _saveGlpGmMigrationStat(eligibleDiff, context);
+  await _saveGlpGmMigrationStat(eligibleDiff, context);
 }
 
 async function _saveGlpGmMigrationStat(

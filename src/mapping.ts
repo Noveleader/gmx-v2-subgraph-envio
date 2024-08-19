@@ -23,6 +23,7 @@ import {
 import { EventLog1Item, EventLogItem } from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
 import { getTokenPrice } from "./entities/prices";
+import { saveUserStat } from "./entities/user";
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
@@ -296,7 +297,29 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     });
     return;
   }
+
+  if (eventName == "DepositCreated") {
+    handleDepositCreated(event, eventData, context);
+  }
 });
+
+async function handleDepositCreated(
+  event: any,
+  eventData: EventLog1Item,
+  context: any
+): Promise<void> {
+  let transaction = await getOrCreateTransaction(event, context);
+  let account = eventData.eventData_addressItems_items[0];
+  await saveUserStat("deposit", account, transaction.timestamp, context);
+
+  let depositRef: DepositRef = {
+    id: eventData.eventData_bytes32Items_items[0],
+    marketAddress: eventData.eventData_addressItems_items[3],
+    account: eventData.eventData_addressItems_items[0],
+  };
+
+  context.DepositRef.set(depositRef);
+}
 
 async function handleDepositExecuted(
   event: any,
