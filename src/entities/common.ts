@@ -13,7 +13,7 @@ export async function getOrCreateTransaction(
   if (entity == undefined) {
     let entity = {
       id: id,
-      hash: event.transactionHash.toString(),
+      hash: event.transaction.hash.toString(),
       timestamp: Number(event.blockTimestamp),
       blockNumber: Number(event.blockNumber),
       transactionIndex: Number(event.transactionIndex),

@@ -2,6 +2,7 @@ import {
   DepositRef,
   EventEmitter_EventLog_eventArgs,
   MarketInfo,
+  Order,
   SellUSDG,
 } from "generated/src/Types.gen";
 import {
@@ -24,13 +25,19 @@ import { EventLog1Item, EventLogItem } from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
 import { getTokenPrice } from "./entities/prices";
 import { saveUserStat } from "./entities/user";
+import { orderTypes, saveOrderExecutedState } from "./entities/orders";
+import {
+  savePositionDecreaseExecutedTradeAction,
+  savePositionIncreaseExecutedTradeAction,
+  saveSwapExecutedTradeAction,
+} from "./entities/trades";
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
 export function handleSellUSDG(event: any, context: any): void {
   let sellUsdgEntity: SellUSDG = {
     id: SELL_USDG_ID,
-    txHash: event.transactionHash.toString(),
+    txHash: event.transaction.hash.toString(),
     logIndex: event.logIndex.toString(),
     feeBasisPoints: event.params.feeBasisPoints,
   };
@@ -47,12 +54,12 @@ export async function handleRemoveLiquidity(
 
   if (sellUsdgEntity == undefined) {
     context.log.error("No SellUSDG entity tx: {}", [
-      event.transactionHash.toString(),
+      event.transaction.hash.toString(),
     ]);
     throw new Error("No SellUSDG entity");
   }
 
-  if (sellUsdgEntity.txHash != event.transactionHash.toString()) {
+  if (sellUsdgEntity.txHash != event.transaction.hash.toString()) {
     context.log.error(
       "SellUSDG entity tx hashes don't match: expected {} actual {}",
       [event.transaction.hash.toHexString(), sellUsdgEntity.txHash]
@@ -97,7 +104,7 @@ export async function handleBatchSend(event: any, context: any): Promise<void> {
       token,
       amounts[i],
       Number(typeId),
-      event.transactionHash.toString(),
+      event.transaction.hash.toString(),
       Number(event.blockNumber),
       Number(event.blockTimestamp),
       context
@@ -300,6 +307,58 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
   if (eventName == "DepositCreated") {
     handleDepositCreated(event, eventData, context);
+    return;
+  }
+
+  if (eventName == "WithdrawalCreated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let account = eventData.eventData_addressItems_items[0];
+
+    await saveUserStat("withdrawal", account, transaction.timestamp, context);
+  }
+
+  if (eventName == "OrderExecuted") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderExecutedState(eventData, transaction, context);
+
+    if (order == null) {
+      return;
+    }
+
+    if (
+      order.orderType == orderTypes.get("MarketSwap") ||
+      order.orderType == orderTypes.get("LimitSwap")
+    ) {
+      await saveSwapExecutedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    } else if (
+      order.orderType == orderTypes.get("MarketIncrease") ||
+      order.orderType == orderTypes.get("LimitIncrease")
+    ) {
+      await savePositionIncreaseExecutedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    } else if (
+      order.orderType == orderTypes.get("MarketDecrease") ||
+      order.orderType == orderTypes.get("LimitDecrease") ||
+      order.orderType == orderTypes.get("StopLossDecrease") ||
+      order.orderType == orderTypes.get("Liquidation")
+    ) {
+      await savePositionDecreaseExecutedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    }
+    return;
   }
 });
 
