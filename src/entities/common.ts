@@ -1,5 +1,4 @@
-import { Transaction } from "ethers";
-
+import { Transaction } from "generated";
 export async function getOrCreateTransaction(
   event: any,
   context: any

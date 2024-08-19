@@ -1,8 +1,4 @@
-import {
-  EventEmitter_EventLog1_eventArgs,
-  SellUSDG,
-  Vault_SellUSDG_eventArgs,
-} from "generated/src/Types.gen";
+import { SellUSDG } from "generated/src/Types.gen";
 import {
   saveLiquidityProviderIncentivesStat,
   saveUserGlpGmMigrationStatGlpData,
@@ -10,6 +6,10 @@ import {
 } from "./entities/incentives/liquidityIncentives";
 import { saveDistribution } from "./entities/distributions";
 import { getOrCreateTransaction } from "./entities/common";
+import { saveUserGmTokensBalanceChange } from "./entities/userBalance";
+import { saveMarketInfoTokensSupply } from "./entities/markets";
+import { EventEmitter_EventLog_handler } from "generated/src/Handlers.gen";
+import { EventLogItem } from "./interfaces/interface";
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
@@ -114,7 +114,56 @@ export async function handleMarketTokenTransfer(
 
     await saveUserMarketInfo(from, marketAddress, value * BigInt(-1), context);
 
-    let transaction = getOrCreateTransaction(event, context);
-    
+    let transaction = await getOrCreateTransaction(event, context);
+
+    await saveUserGmTokensBalanceChange(
+      to,
+      marketAddress,
+      value,
+      transaction,
+      event.logIndex,
+      context
+    );
+  }
+
+  // `to` user receives GM tokens
+  if (to != ADDRESS_ZERO) {
+    // LiquidityProviderIncentivesStat *should* be updated before UserMarketInfo
+    await saveLiquidityProviderIncentivesStat(
+      to,
+      marketAddress,
+      "1w",
+      value,
+      event.blockTimestamp,
+      context
+    );
+
+    await saveUserMarketInfo(to, marketAddress, value, context);
+
+    let transaction = await getOrCreateTransaction(event, context);
+
+    await saveUserGmTokensBalanceChange(
+      to,
+      marketAddress,
+      value,
+      transaction,
+      event.logIndex,
+      context
+    );
+  }
+
+  if (from == ADDRESS_ZERO) {
+    await saveMarketInfoTokensSupply(marketAddress, value, context);
+  }
+
+  if (to == ADDRESS_ZERO) {
+    saveMarketInfoTokensSupply(marketAddress, value * BigInt(-1), context);
   }
 }
+
+EventEmitter_EventLog_handler(async ({ event, context }) => {
+  let eventName = event.params.eventName;
+  // let eventData: EventLogItem = {
+  //   id: event.
+  // }
+});
