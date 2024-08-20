@@ -25,8 +25,19 @@ import { EventLog1Item, EventLogItem } from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
 import { getTokenPrice } from "./entities/prices";
 import { saveUserStat } from "./entities/user";
-import { orderTypes, saveOrderExecutedState } from "./entities/orders";
 import {
+  orderTypes,
+  saveOrderCancelledState,
+  saveOrderCollateralAutoUpdate,
+  saveOrderExecutedState,
+  saveOrderFrozenState,
+  saveOrderSizeDeltaAutoUpdate,
+  saveOrderUpdate,
+} from "./entities/orders";
+import {
+  saveOrderCancelledTradeAction,
+  saveOrderFrozenTradeAction,
+  saveOrderUpdatedTradeAction,
   savePositionDecreaseExecutedTradeAction,
   savePositionIncreaseExecutedTradeAction,
   saveSwapExecutedTradeAction,
@@ -360,6 +371,71 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     }
     return;
   }
+
+  if (eventName == "OrderCancelled") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderCancelledState(eventData, transaction, context);
+    if (order !== null) {
+      await saveOrderCancelledTradeAction(
+        eventId,
+        order as Order,
+        order.cancelledReason as string,
+        order.cancelledReasonBytes as string,
+        transaction,
+        context
+      );
+    }
+
+    return;
+  }
+
+  if (eventName == "OrderUpdated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderUpdate(eventData, context);
+
+    if (order !== null) {
+      await saveOrderUpdatedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    }
+
+    return;
+  }
+
+  if (eventName == "OrderFrozen") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderFrozenState(eventData, context);
+
+    if (order == null) {
+      return;
+    }
+
+    await saveOrderFrozenTradeAction(
+      eventId,
+      order as Order,
+      order.frozenReason as string,
+      order.frozenReasonBytes as string,
+      transaction,
+      context
+    );
+
+    return;
+  }
+
+  if (eventName == "OrderSizeDeltaAutoUpdated") {
+    await saveOrderSizeDeltaAutoUpdate(eventData, context);
+    return;
+  }
+
+  if (eventName == "OrderCollateralDeltaAmountAutoUpdated") {
+    await saveOrderCollateralAutoUpdate(eventData, context);
+    return;
+  }
+
+  
 });
 
 async function handleDepositCreated(

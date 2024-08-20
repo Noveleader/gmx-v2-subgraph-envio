@@ -12,6 +12,8 @@ import { getSwapInfoId } from "./swap";
 import { getMarketInfo } from "./markets";
 import { orderTypes } from "./orders";
 
+let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
+
 export async function saveSwapExecutedTradeAction(
   eventId: string,
   order: Order,
@@ -207,4 +209,82 @@ export async function savePositionDecreaseExecutedTradeAction(
   };
 
   context.TradeAction.set(tradeAction);
+}
+
+export async function saveOrderCancelledTradeAction(
+  eventId: string,
+  order: Order,
+  reason: string,
+  reasonBytes: string,
+  transaction: Transaction,
+  context: any
+): Promise<TradeAction> {
+  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+
+  tradeAction = {
+    ...tradeAction,
+    eventName: "OrderCancelled",
+    reason: reason,
+    reasonBytes: reasonBytes,
+    transaction_id: transaction.id,
+    timestamp: transaction.timestamp,
+  };
+
+  context.TradeAction.set(tradeAction);
+
+  return tradeAction;
+}
+
+export async function saveOrderUpdatedTradeAction(
+  eventId: string,
+  order: Order,
+  transaction: Transaction,
+  context: any
+): Promise<TradeAction> {
+  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+
+  tradeAction = {
+    ...tradeAction,
+    eventName: "OrderUpdated",
+    transaction_id: transaction.id,
+    timestamp: transaction.timestamp,
+  };
+
+  context.TradeAction.set(tradeAction);
+
+  return tradeAction as TradeAction;
+}
+
+export async function saveOrderFrozenTradeAction(
+  eventId: string,
+  order: Order,
+  reason: string,
+  reasonBytes: string,
+  transaction: Transaction,
+  context: any
+): Promise<TradeAction> {
+  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+
+  if (order.marketAddress != ZERO_ADDRESS) {
+    let marketInfo = await getMarketInfo(order.marketAddress, context);
+    let tokenPrice = await context.TokenPrice.get(marketInfo.indexToken);
+    tradeAction = {
+      ...tradeAction,
+      indexTokenPriceMin: tokenPrice.minPrice,
+      indexTokenPriceMax: tokenPrice.maxPrice,
+    };
+  }
+
+  tradeAction = {
+    ...tradeAction,
+    eventName: "OrderFrozen",
+    reason: reason,
+    reasonBytes: reasonBytes,
+    transaction_id: transaction.id,
+    timestamp: transaction.timestamp,
+  };
+
+  context.TradeAction.set(tradeAction);
+
+  return tradeAction;
 }
