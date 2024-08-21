@@ -20,10 +20,17 @@ import {
   saveMarketInfoTokensSupply,
 } from "./entities/markets";
 import {
+  BatchSender_BatchSend_handler,
+  BatchSenderNew_BatchSend_handler,
   EventEmitter_EventLog1_contractRegister,
   EventEmitter_EventLog1_handler,
   EventEmitter_EventLog_handler,
+  GlpManager_RemoveLiquidity_handler,
   MarketTokenTemplate,
+  MarketTokenTemplate_Transfer_contractRegister,
+  MarketTokenTemplate_Transfer_handler,
+  Vault,
+  Vault_SellUSDG_handler,
 } from "generated/src/Handlers.gen";
 import { EventLog1Item, EventLogItem } from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
@@ -60,35 +67,32 @@ import { getMarketTokensSupplyFromContract } from "./contracts/getMarketTokensSu
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
-export function handleSellUSDG(event: any, context: any): void {
+Vault_SellUSDG_handler(async ({ event, context }) => {
   let sellUsdgEntity: SellUSDG = {
     id: SELL_USDG_ID,
     txHash: event.transaction.hash.toString(),
-    logIndex: event.logIndex.toString(),
+    logIndex: event.logIndex,
     feeBasisPoints: event.params.feeBasisPoints,
   };
   context.SellUSDG.set(sellUsdgEntity);
-}
+});
 
-export async function handleRemoveLiquidity(
-  event: any,
-  context: any
-): Promise<void> {
+GlpManager_RemoveLiquidity_handler(async ({ event, context }) => {
   let sellUsdgEntity: SellUSDG | undefined = await context.SellUSDG.get(
     SELL_USDG_ID
   );
 
   if (sellUsdgEntity == undefined) {
-    context.log.error("No SellUSDG entity tx: {}", [
-      event.transaction.hash.toString(),
-    ]);
+    context.log.error(
+      `No SellUSDG entity tx: {} ${[event.transaction.hash.toString()]}`
+    );
     throw new Error("No SellUSDG entity");
   }
 
   if (sellUsdgEntity.txHash != event.transaction.hash.toString()) {
     context.log.error(
-      "SellUSDG entity tx hashes don't match: expected {} actual {}",
-      [event.transaction.hash.toHexString(), sellUsdgEntity.txHash]
+      `SellUSDG entity tx hashes don't match: expected {} actual {} 
+      ${[event.transaction.hash.toString(), sellUsdgEntity.txHash]}`
     );
 
     throw new Error("SellUSDG entity tx hashes don't match");
@@ -98,11 +102,11 @@ export async function handleRemoveLiquidity(
 
   if (sellUsdgEntity.logIndex != expectedLogIndex) {
     context.log.error(
-      "SellUSDG entity incorrect log index: expected {} got {}",
+      `SellUSDG entity incorrect log index: expected {} got {} 
       [
         expectedLogIndex.toString(),
         (sellUsdgEntity.logIndex as number).toString(),
-      ]
+      ]`
     );
 
     throw new Error("SellUSDG entity tx hashes don't match");
@@ -110,14 +114,14 @@ export async function handleRemoveLiquidity(
 
   saveUserGlpGmMigrationStatGlpData(
     event.params.account.toString(),
-    Number(event.blockTimestamp),
+    Number(event.block.timestamp),
     event.params.usdgAmount,
     sellUsdgEntity.feeBasisPoints,
     context
   );
-}
+});
 
-export async function handleBatchSend(event: any, context: any): Promise<void> {
+BatchSender_BatchSend_handler(async ({ event, context }) => {
   let typeId = event.params.typeId;
   let token = event.params.token.toString();
   let receivers = event.params.accounts;
@@ -131,18 +135,36 @@ export async function handleBatchSend(event: any, context: any): Promise<void> {
       amounts[i],
       Number(typeId),
       event.transaction.hash.toString(),
-      Number(event.blockNumber),
-      Number(event.blockTimestamp),
+      Number(event.block.number),
+      Number(event.block.timestamp),
       context
     );
   }
-}
+});
 
-export async function handleMarketTokenTransfer(
-  event: any,
-  context: any
-): Promise<void> {
-  let marketAddress = event.address.toString();
+BatchSenderNew_BatchSend_handler(async ({ event, context }) => {
+  let typeId = event.params.typeId;
+  let token = event.params.token.toString();
+  let receivers = event.params.accounts;
+  let amounts = event.params.amounts;
+
+  for (let i = 0; i < event.params.accounts.length; i++) {
+    let receiver = receivers[i].toString();
+    saveDistribution(
+      receiver,
+      token,
+      amounts[i],
+      Number(typeId),
+      event.transaction.hash.toString(),
+      Number(event.block.number),
+      Number(event.block.timestamp),
+      context
+    );
+  }
+});
+
+MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
+  let marketAddress = event.srcAddress.toString();
   let from = event.params.from.toString();
   let to = event.params.to.toString();
   let value = event.params.value;
@@ -155,7 +177,7 @@ export async function handleMarketTokenTransfer(
       marketAddress,
       "1w",
       value * BigInt(-1),
-      event.blockTimestamp,
+      event.block.timestamp,
       context
     );
 
@@ -168,7 +190,7 @@ export async function handleMarketTokenTransfer(
       marketAddress,
       value,
       transaction,
-      event.logIndex,
+      BigInt(event.logIndex),
       context
     );
   }
@@ -181,7 +203,7 @@ export async function handleMarketTokenTransfer(
       marketAddress,
       "1w",
       value,
-      event.blockTimestamp,
+      event.block.timestamp,
       context
     );
 
@@ -194,7 +216,7 @@ export async function handleMarketTokenTransfer(
       marketAddress,
       value,
       transaction,
-      event.logIndex,
+      BigInt(event.logIndex),
       context
     );
   }
@@ -206,7 +228,7 @@ export async function handleMarketTokenTransfer(
   if (to == ADDRESS_ZERO) {
     saveMarketInfoTokensSupply(marketAddress, value * BigInt(-1), context);
   }
-}
+});
 
 EventEmitter_EventLog_handler(async ({ event, context }) => {
   let eventName = event.params.eventName;
@@ -325,9 +347,9 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
   if (eventName == "MarketCreated") {
     await saveMarketInfo(eventData, context);
-    EventEmitter_EventLog1_contractRegister(({ event, context }) => {
-      context.addMarketTokenTemplate(eventData.eventData_addressItems_items[0]);
-    });
+    // MarketTokenTemplate_Transfer_contractRegister(({ event, context }) => {
+    //   context.addMarketTokenTemplate(eventData.eventData_addressItems_items[0]);
+    // });
     return;
   }
 
@@ -494,7 +516,6 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     let poolValue = await getMarketPoolValueFromContract(
       swapFeesInfo.marketAddress,
       event.chainId,
-      transaction,
       context
     );
 
@@ -507,7 +528,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       : (await getMarketInfo(swapFeesInfo.marketAddress, context))
           .marketTokensSupply;
 
-    saveCollectedMarketFees(
+    await saveCollectedMarketFees(
       transaction,
       swapFeesInfo.marketAddress,
       poolValue,

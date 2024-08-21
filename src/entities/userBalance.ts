@@ -74,8 +74,10 @@ async function getLatestUserGmTokensBalanceChange(
 
   if (!latestId) {
     context.log.warn(
-      "LatestUserGmTokensBalanceChangeRef.latestUserGmTokensBalanceChange is null: {}",
-      [id]
+      `LatestUserGmTokensBalanceChangeRef.latestUserGmTokensBalanceChange is null: {} ${[
+        id,
+      ]}
+    `
     );
     throw new Error(
       "LatestUserGmTokensBalanceChangeRef.latestUserGmTokensBalanceChange is null"
@@ -108,9 +110,9 @@ async function _createUserGmTokensBalanceChange(
   let entity = await context.UserGmTokensBalanceChange.get(id);
 
   if (entity) {
-    context.log.warn("UserGmTokensBalanceChange already exists: {}", [
-      entity.id,
-    ]);
+    context.log.warn(
+      `UserGmTokensBalanceChange already exists: {} ${[entity.id]}`
+    );
     throw new Error("UserGmTokensBalanceChange already exists");
   }
 

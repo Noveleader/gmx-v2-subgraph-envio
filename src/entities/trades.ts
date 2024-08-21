@@ -174,7 +174,7 @@ export async function savePositionDecreaseExecutedTradeAction(
   }
 
   if (positionFeesInfo == undefined) {
-    context.log.warn("PositionFeesInfo not found {}", [order.id]);
+    context.log.warn(`PositionFeesInfo not found {} ${[order.id]}`);
     throw new Error("PositionFeesInfo not found " + order.id);
   }
 

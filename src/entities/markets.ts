@@ -26,7 +26,7 @@ export async function getMarketInfo(
       };
       context.MarketInfo.set(entity);
     } else {
-      context.log.error("MarketInfo not found {}", [marketAddress]);
+      context.log.error(`MarketInfo not found {} ${[marketAddress]}`);
       throw new Error("MarketInfo not found");
     }
   }

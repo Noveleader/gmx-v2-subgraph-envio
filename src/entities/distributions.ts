@@ -12,7 +12,7 @@ export async function saveDistribution(
   context: any
 ): Promise<void> {
   let id = receiver + ":" + txHash + ":" + typeId.toString();
-  let entity: Distribution | undefined = context.Distribution.get(id);
+  let entity: Distribution | undefined = await context.Distribution.get(id);
 
   if (entity == undefined) {
     entity = {
@@ -27,6 +27,11 @@ export async function saveDistribution(
       timestamp: timestamp,
     };
   }
+
+  // Debug
+  // context.log.debug(
+  //   `Tokens array: ${entity.tokens} \n Tokens array length: ${entity.tokens.length}`
+  // );
 
   let tokens = entity.tokens;
   tokens.push(token);

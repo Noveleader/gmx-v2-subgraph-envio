@@ -15,7 +15,6 @@ let MAX_PNL_FACTOR_FOR_TRADERS: string =
 export async function getMarketPoolValueFromContract(
   marketAddress: string,
   chainId: number,
-  transaction: Transaction,
   context: any
 ): Promise<BigInt> {
   let network = getNetworkFromChainId(chainId);
@@ -23,9 +22,9 @@ export async function getMarketPoolValueFromContract(
   const marketConfig = marketConfigs.get(marketAddress);
 
   if (!marketConfig) {
-    context.log.error("Market Config not found for market address ", [
-      marketAddress,
-    ]);
+    context.log.error(
+      `Market Config not found for market address ${[marketAddress]}`
+    );
     throw new Error("Market Config not found");
   }
 
@@ -72,7 +71,7 @@ async function getTokenPriceProps(
     minPrice = tokenPrice.minPrice;
     maxPrice = tokenPrice.maxPrice;
   } else if (tokenAddress != ZERO_ADDRESS) {
-    context.log.error("TokenPrice not found {}", [tokenAddress]);
+    context.log.error(`TokenPrice not found {} ${[tokenAddress]}`);
     throw new Error("tokenAddress is not zero address");
   }
 

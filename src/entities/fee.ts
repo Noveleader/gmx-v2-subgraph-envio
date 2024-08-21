@@ -73,6 +73,8 @@ export async function saveSwapFeesInfo(
 
   let eventDataUintItemsItems = eventData.eventData_uintItems_items;
 
+  let eventDataStringItemsItems = eventData.eventData_stringItems_items;
+
   let marketAddress: string = eventDataAddressItemsItems[1];
   let tokenAddress: string = eventDataAddressItemsItems[2];
   let swapFeeType: string = eventDataBytes32ItemsItems[1];
@@ -81,11 +83,23 @@ export async function saveSwapFeesInfo(
   let feeReceiverAmount: BigInt = BigInt(eventDataUintItemsItems[1]);
   let feeAmountForPool: BigInt = BigInt(eventDataUintItemsItems[2]);
 
+  let action = eventDataStringItemsItems[0];
+
+  if (swapFeeType == undefined) {
+    if (action == "deposit") {
+      swapFeeType = swapFeeTypes.get("DEPOSIT_FEE_TYPE")!;
+    } else if (action == "withdrawal") {
+      swapFeeType = swapFeeTypes.get("WITHDRAWAL_FEE_TYPE")!;
+    } else if (action == "swap") {
+      swapFeeType = swapFeeTypes.get("SWAP_FEE_TYPE")!;
+    }
+  }
+
   let swapFeesInfo: SwapFeesInfo = {
     id: eventId,
     marketAddress: marketAddress,
     tokenAddress: tokenAddress,
-    swapFeeType: swapFeeType != null ? swapFeeType : "",
+    swapFeeType: swapFeeType,
     tokenPrice: BigInt(Number(tokenPrice)),
     feeReceiverAmount: BigInt(Number(feeReceiverAmount)),
     feeUsdForPool: BigInt(Number(feeAmountForPool!) * Number(tokenPrice)),
@@ -101,6 +115,9 @@ export function getSwapActionByFeeType(
   swapFeeType: string,
   context: any
 ): string {
+  // debug
+  // context.log.debug(`Swap Fee Type: ${swapFeeType}`);
+
   if (swapFeeType == swapFeeTypes.get("SWAP_FEE_TYPE")) {
     return "swap";
   }
@@ -113,7 +130,7 @@ export function getSwapActionByFeeType(
     return "withdrawal";
   }
 
-  context.log.error("Unknown swap fee type: {}", [swapFeeType]);
+  context.log.error(`Unknown swap fee type: {}" ${[swapFeeType]}`);
   throw new Error("Unknown swap fee type: " + swapFeeType);
 }
 

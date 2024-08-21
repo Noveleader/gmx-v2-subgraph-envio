@@ -37,6 +37,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0x1cd5fb2bc5e3071ba5bae1d2952ec0d362d81cb7",
   createMarketConfig(
@@ -46,6 +47,7 @@ marketConfigs.set(
     "0xbfcbcdcbcc1b765843dce4df044b92fe68182a62"
   )
 );
+
 marketConfigs.set(
   "0x22b9076bbcd93e491999aa748fdd6623fa019532",
   createMarketConfig(
@@ -64,6 +66,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0x4370ad7cb842df8ba2b27d07763908561ba61771",
   createMarketConfig(
@@ -73,6 +76,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0x68ddc36f80199411ba54df30c982255d51a9d358",
   createMarketConfig(
@@ -82,6 +86,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0x72349b00768601d9598084220224948ce5b6ebdd",
   createMarketConfig(
@@ -91,6 +96,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0x72b11c5589b41aea9cdcd814bfb19b557aae2844",
   createMarketConfig(
@@ -100,6 +106,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0x76451d352e6d0032694f4db89a6520ab1aa702e2",
   createMarketConfig(
@@ -109,6 +116,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0xb883cabec015c36104ab8779e7f3ca96f6073294",
   createMarketConfig(
@@ -118,6 +126,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0xbdf740564ba0caa5d74c30c530d63f9f3dfdcc86",
   createMarketConfig(
@@ -127,6 +136,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0xbdf85aaf3c63cce42ee2f18d75f9fd8aca4d5923",
   createMarketConfig(
@@ -136,6 +146,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0xd886e20f64093ab6e24795952aebc60d012abc9a",
   createMarketConfig(
@@ -145,6 +156,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0xda83ad3090a4d0861c5bea3f56c082e57bc47c14",
   createMarketConfig(
@@ -154,6 +166,7 @@ marketConfigs.set(
     "0xbfcbcdcbcc1b765843dce4df044b92fe68182a62"
   )
 );
+
 marketConfigs.set(
   "0xdb6b41bf877a7ca9988efc451922c687ba1a5e2d",
   createMarketConfig(
@@ -163,6 +176,7 @@ marketConfigs.set(
     "0x04fc936a15352a1b15b3b9c56ea002051e3db3e5"
   )
 );
+
 marketConfigs.set(
   "0xe501731e05b3af8fe09587057b4884d4b66d2cea",
   createMarketConfig(
@@ -172,6 +186,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0xfb5e4faa671cd65e97d23cdaa70d67bca7e11845",
   createMarketConfig(

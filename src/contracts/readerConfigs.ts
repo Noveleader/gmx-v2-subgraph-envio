@@ -37,7 +37,7 @@ export function getReaderContractConfigByNetwork(
 ): ReaderContractConfig {
   let contract = readerContractByNetwork.get(network);
   if (!contract) {
-    context.log.warn("Contract address not found for network {}", [network]);
+    context.log.warn(`Contract address not found for network {} ${[network]}`);
     throw new Error("Contract address not found for network");
   }
 
