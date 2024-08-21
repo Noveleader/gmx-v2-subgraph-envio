@@ -14,7 +14,11 @@ import {
 import { saveDistribution } from "./entities/distributions";
 import { getIdFromEvent, getOrCreateTransaction } from "./entities/common";
 import { saveUserGmTokensBalanceChange } from "./entities/userBalance";
-import { saveMarketInfo, saveMarketInfoTokensSupply } from "./entities/markets";
+import {
+  getMarketInfo,
+  saveMarketInfo,
+  saveMarketInfoTokensSupply,
+} from "./entities/markets";
 import {
   EventEmitter_EventLog1_contractRegister,
   EventEmitter_EventLog1_handler,
@@ -42,6 +46,17 @@ import {
   savePositionIncreaseExecutedTradeAction,
   saveSwapExecutedTradeAction,
 } from "./entities/trades";
+import { handleSwapInfo as saveSwapInfo } from "./entities/swap";
+import { saveSwapVolumeInfo, saveVolumeInfo } from "./entities/volume";
+import {
+  getSwapActionByFeeType,
+  saveCollectedMarketFees,
+  saveSwapFeesInfo,
+  saveSwapFeesInfoWithPeriod,
+} from "./entities/fee";
+import { getMarketPoolValueFromContract } from "./contracts/getMarketPoolValueFromContract";
+import { getMarketTokensSupplyFromContract } from "./contracts/getMarketTokensSupplyFromContract";
+
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
 
@@ -435,7 +450,83 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     return;
   }
 
-  
+  if (eventName == "SwapInfo") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let tokenIn = eventData.eventData_addressItems_items[2];
+    let tokenOut = eventData.eventData_addressItems_items[3];
+
+    let amountIn = BigInt(eventData.eventData_uintItems_items[2]);
+    let tokenInPrice = BigInt(eventData.eventData_uintItems_items[0]);
+
+    let volumeUsd = amountIn! * tokenInPrice!;
+
+    let receiver = eventData.eventData_addressItems_items[1];
+
+    await saveSwapInfo(eventData, transaction, context);
+    await saveSwapVolumeInfo(
+      transaction.timestamp,
+      tokenIn,
+      tokenOut,
+      volumeUsd,
+      context
+    );
+    await saveUserStat("swap", receiver, transaction.timestamp, context);
+    return;
+  }
+
+  if (eventName == "SwapFeesCollected") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let swapFeesInfo = await saveSwapFeesInfo(
+      eventData,
+      eventId,
+      transaction,
+      context
+    );
+    let tokenPrice = BigInt(eventData.eventData_uintItems_items[0]);
+    let feeReceiverAmount = BigInt(eventData.eventData_uintItems_items[1]);
+    let feeAmountForPool = BigInt(eventData.eventData_uintItems_items[2]);
+    let amountAfterFees = BigInt(eventData.eventData_uintItems_items[3]);
+
+    let action = getSwapActionByFeeType(swapFeesInfo.swapFeeType, context);
+    let totalAmountIn = amountAfterFees + feeAmountForPool + feeReceiverAmount;
+
+    let volumeUsd = totalAmountIn * tokenPrice;
+    let poolValue = await getMarketPoolValueFromContract(
+      swapFeesInfo.marketAddress,
+      event.chainId,
+      transaction,
+      context
+    );
+
+    let marketTokensSupply = isDepositOrWithdrawalAction(action)
+      ? await getMarketTokensSupplyFromContract(
+          swapFeesInfo.marketAddress,
+          event.chainId,
+          context
+        )
+      : (await getMarketInfo(swapFeesInfo.marketAddress, context))
+          .marketTokensSupply;
+
+    saveCollectedMarketFees(
+      transaction,
+      swapFeesInfo.marketAddress,
+      poolValue,
+      swapFeesInfo.feeUsdForPool,
+      marketTokensSupply,
+      context
+    );
+
+    await saveVolumeInfo(action, transaction.timestamp, volumeUsd, context);
+    await saveSwapFeesInfoWithPeriod(
+      feeAmountForPool,
+      feeReceiverAmount,
+      tokenPrice,
+      transaction.timestamp,
+      context
+    );
+
+    return;
+  }
 });
 
 async function handleDepositCreated(
@@ -494,4 +585,8 @@ async function handleDepositExecuted(
     depositUsd,
     context
   );
+}
+
+function isDepositOrWithdrawalAction(action: string): boolean {
+  return action == "deposit" || action == "withdrawal";
 }
