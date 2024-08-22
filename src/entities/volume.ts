@@ -1,6 +1,7 @@
-import { SwapVolumeInfo, VolumeInfo } from "generated";
+import { PositionVolumeInfo, SwapVolumeInfo, VolumeInfo } from "generated";
 import { timestampToPeriodStart } from "../utils/time";
 import { ZERO } from "../utils/number";
+import { getMarketInfo } from "./markets";
 
 async function getOrCreateSwapVolumeInfo(
   timestamp: number,
@@ -203,6 +204,87 @@ export async function saveVolumeInfo(
       ),
     };
   }
+}
+
+export async function savePositionVolumeInfo(
+  timestamp: number,
+  collateralToken: string,
+  marketToken: string,
+  sizeInUsd: BigInt,
+  context: any
+): Promise<void> {
+  let marketInfo = await getMarketInfo(marketToken, context);
+  let hourlyVolumeInfo = await getOrCreatePositionVolumeInfo(
+    timestamp,
+    collateralToken,
+    marketInfo.indexToken,
+    "1h",
+    context
+  );
+
+  let dailyVolumeInfo = await getOrCreatePositionVolumeInfo(
+    timestamp,
+    collateralToken,
+    marketInfo.indexToken,
+    "1d",
+    context
+  );
+
+  let totalVolumeInfo = await getOrCreatePositionVolumeInfo(
+    timestamp,
+    collateralToken,
+    marketInfo.indexToken,
+    "total",
+    context
+  );
+
+  hourlyVolumeInfo = {
+    ...hourlyVolumeInfo,
+    volumeUsd: hourlyVolumeInfo.volumeUsd + BigInt(sizeInUsd.toString()),
+  };
+
+  dailyVolumeInfo = {
+    ...dailyVolumeInfo,
+    volumeUsd: dailyVolumeInfo.volumeUsd + BigInt(sizeInUsd.toString()),
+  };
+
+  totalVolumeInfo = {
+    ...totalVolumeInfo,
+    volumeUsd: totalVolumeInfo.volumeUsd + BigInt(sizeInUsd.toString()),
+  };
+
+  context.PositionVolumeInfo.set(hourlyVolumeInfo);
+  context.PositionVolumeInfo.set(dailyVolumeInfo);
+  context.PositionVolumeInfo.set(totalVolumeInfo);
+}
+
+async function getOrCreatePositionVolumeInfo(
+  timestamp: number,
+  collateralToken: string,
+  indexToken: string,
+  period: string,
+  context: any
+): Promise<PositionVolumeInfo> {
+  let timestampGroup = timestampToPeriodStart(timestamp, period);
+  let id = getVolumeInfoId(collateralToken, indexToken) + ":" + period;
+  if (period != "total") {
+    id = id + ":" + timestampGroup.toString();
+  }
+  let volumeInfo: PositionVolumeInfo | undefined =
+    await context.PositionVolumeInfo.get(id);
+
+  if (volumeInfo == undefined) {
+    volumeInfo = {
+      id: id,
+      collateralToken: collateralToken,
+      indexToken: indexToken,
+      timestamp: timestampGroup,
+      period: period,
+      volumeUsd: BigInt(0),
+    };
+  }
+
+  return volumeInfo as PositionVolumeInfo;
 }
 
 async function getOrCreateVolumeInfo(

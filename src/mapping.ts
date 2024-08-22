@@ -54,7 +54,11 @@ import {
   saveSwapExecutedTradeAction,
 } from "./entities/trades";
 import { handleSwapInfo as saveSwapInfo } from "./entities/swap";
-import { saveSwapVolumeInfo, saveVolumeInfo } from "./entities/volume";
+import {
+  savePositionVolumeInfo,
+  saveSwapVolumeInfo,
+  saveVolumeInfo,
+} from "./entities/volume";
 import {
   getSwapActionByFeeType,
   saveCollectedMarketFees,
@@ -66,6 +70,11 @@ import {
 import { getMarketPoolValueFromContract } from "./contracts/getMarketPoolValueFromContract";
 import { getMarketTokensSupplyFromContract } from "./contracts/getMarketTokensSupplyFromContract";
 import { saveTradingIncentivesStat } from "./entities/incentives/tradingIncentives";
+import {
+  savePositionDecrease,
+  savePositionIncrease,
+} from "./entities/positions";
+import { size } from "viem";
 
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
@@ -616,6 +625,80 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     );
 
     return;
+  }
+
+  if (eventName == "PositionIncrease") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let collateralToken = eventData.eventData_addressItems_items[2];
+    let marketToken = eventData.eventData_addressItems_items[1];
+    let sizeDeltaUsd = eventData.eventData_uintItems_items[12];
+    let account = eventData.eventData_addressItems_items[0];
+
+    savePositionIncrease(eventData, transaction, context);
+    await saveVolumeInfo(
+      "margin",
+      transaction.timestamp,
+      BigInt(sizeDeltaUsd),
+      context
+    );
+    await savePositionVolumeInfo(
+      transaction.timestamp,
+      collateralToken,
+      marketToken,
+      BigInt(sizeDeltaUsd),
+      context
+    );
+    await saveUserStat("margin", account, transaction.timestamp, context);
+
+    return;
+  }
+
+  if (eventName == "PositionDecrease") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let collateralToken = eventData.eventData_addressItems_items[2];
+    let marketToken = eventData.eventData_addressItems_items[1];
+    let sizeDeltaUsd = eventData.eventData_uintItems_items[12];
+    let account = eventData.eventData_addressItems_items[0];
+
+    savePositionDecrease(eventData, transaction, context);
+    await saveVolumeInfo(
+      "margin",
+      transaction.timestamp,
+      BigInt(sizeDeltaUsd),
+      context
+    );
+
+    await savePositionVolumeInfo(
+      transaction.timestamp,
+      collateralToken,
+      marketToken,
+      BigInt(sizeDeltaUsd),
+      context
+    );
+
+    await saveUserStat("margin", account, transaction.timestamp, context);
+    return;
+  }
+
+  if (eventName == "FundingFeesClaimed") {
+  }
+
+  if (eventName == "CollateralClaimed") {
+  }
+
+  if (eventName == "ClaimableFundingUpdated") {
+  }
+
+  if (eventName == "MarketPoolValueUpdated") {
+  }
+
+  if (eventName == "PositionImpactPoolDistributed") {
+  }
+
+  if (eventName == "OraclePriceUpdate") {
+  }
+
+  if (eventName == "ClaimableCollateralUpdated") {
   }
 });
 
