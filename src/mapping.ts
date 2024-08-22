@@ -58,11 +58,14 @@ import { saveSwapVolumeInfo, saveVolumeInfo } from "./entities/volume";
 import {
   getSwapActionByFeeType,
   saveCollectedMarketFees,
+  savePositionFeesInfo,
+  savePositionFeesInfoWithPeriod,
   saveSwapFeesInfo,
   saveSwapFeesInfoWithPeriod,
 } from "./entities/fee";
 import { getMarketPoolValueFromContract } from "./contracts/getMarketPoolValueFromContract";
 import { getMarketTokensSupplyFromContract } from "./contracts/getMarketTokensSupplyFromContract";
+import { saveTradingIncentivesStat } from "./entities/incentives/tradingIncentives";
 
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
@@ -543,6 +546,72 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       feeReceiverAmount,
       tokenPrice,
       transaction.timestamp,
+      context
+    );
+
+    return;
+  }
+
+  if (eventName == "PositionFeesInfo") {
+    let transaction = await getOrCreateTransaction(event, context);
+    await savePositionFeesInfo(
+      eventData,
+      "PositionFeesInfo",
+      transaction,
+      context
+    );
+
+    return;
+  }
+
+  if (eventName == "PositionFeesCollected") {
+    let eventDataUintItemsItems = eventData.eventData_uintItems_items;
+    let transaction = await getOrCreateTransaction(event, context);
+    let positionFeeAmount = BigInt(eventDataUintItemsItems[24]);
+    let positionFeeAmountForPool = BigInt(eventDataUintItemsItems[23]);
+    let collateralTokenPriceMin = BigInt(eventDataUintItemsItems[0]);
+    let borrowingFeeUsd = BigInt(eventDataUintItemsItems[14]);
+    let positionFeesInfo = await savePositionFeesInfo(
+      eventData,
+      eventName,
+      transaction,
+      context
+    );
+
+    let poolValue = await getMarketPoolValueFromContract(
+      positionFeesInfo.marketAddress,
+      event.chainId,
+      context
+    );
+
+    let marketInfo = await getMarketInfo(
+      positionFeesInfo.marketAddress,
+      context
+    );
+
+    await saveCollectedMarketFees(
+      transaction,
+      positionFeesInfo.marketAddress,
+      poolValue,
+      positionFeesInfo.feeUsdForPool,
+      marketInfo.marketTokensSupply,
+      context
+    );
+
+    await savePositionFeesInfoWithPeriod(
+      positionFeeAmount,
+      positionFeeAmountForPool,
+      borrowingFeeUsd,
+      collateralTokenPriceMin,
+      transaction.timestamp,
+      context
+    );
+
+    await saveTradingIncentivesStat(
+      eventData.eventData_addressItems_items[3],
+      event.block.timestamp,
+      positionFeeAmount,
+      collateralTokenPriceMin,
       context
     );
 

@@ -1,5 +1,7 @@
 import {
   CollectedMarketFeesInfo,
+  PositionFeesInfo,
+  PositionFeesInfoWithPeriod,
   SwapFeesInfo,
   SwapFeesInfoWithPeriod,
   Transaction,
@@ -305,6 +307,175 @@ export async function saveSwapFeesInfoWithPeriod(
 
   context.SwapFeesInfoWithPeriod.set(dailyFees);
   context.SwapFeesInfoWithPeriod.set(totalFees);
+}
+
+export async function savePositionFeesInfo(
+  eventData: EventLog1Item,
+  eventName: string,
+  transaction: Transaction,
+  context: any
+): Promise<PositionFeesInfo> {
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+
+  let eventDataUintItemsItems = eventData.eventData_uintItems_items;
+
+  let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
+
+  let orderKey = eventDataBytes32ItemsItems[0];
+
+  let id = orderKey + ":" + eventName;
+
+  let feesInfo: PositionFeesInfo = await context.PositionFeesInfo.get(id);
+
+  let marketAddress = eventDataAddressItemsItems[0];
+  let collateralTokenAddress = eventDataAddressItemsItems[1];
+  let affiliate = eventDataAddressItemsItems[2];
+  let trader = eventDataAddressItemsItems[3];
+
+  let collateralTokenPriceMin = BigInt(eventDataUintItemsItems[0]);
+  let collateralTokenPriceMax = BigInt(eventDataUintItemsItems[1]);
+
+  let positionFeeAmount = BigInt(eventDataUintItemsItems[24]);
+  let borrowingFeeAmount = BigInt(eventDataUintItemsItems[15]);
+  let fundingFeeAmount = BigInt(eventDataUintItemsItems[8]);
+  let feeUsdForPool = BigInt(
+    Number(eventDataUintItemsItems[22]!) * Number(collateralTokenPriceMin)
+  );
+
+  let totalRebateAmount = BigInt(eventDataUintItemsItems[5]);
+  let totalRebateFactor = BigInt(eventDataUintItemsItems[3]);
+  let traderDiscountAmount = BigInt(eventDataUintItemsItems[6]);
+  let affiliateRewardAmount = BigInt(eventDataUintItemsItems[7]);
+
+  feesInfo = {
+    ...feesInfo,
+    orderKey: orderKey,
+    eventName: eventName,
+    marketAddress: marketAddress,
+    collateralTokenAddress: collateralTokenAddress,
+    trader: trader,
+    affiliate: affiliate,
+    collateralTokenPriceMin: collateralTokenPriceMin,
+    collateralTokenPriceMax: collateralTokenPriceMax,
+    positionFeeAmount: positionFeeAmount,
+    borrowingFeeAmount: borrowingFeeAmount,
+    fundingFeeAmount: fundingFeeAmount,
+    feeUsdForPool: feeUsdForPool,
+    totalRebateAmount: totalRebateAmount,
+    totalRebateFactor: totalRebateFactor,
+    traderDiscountAmount: traderDiscountAmount,
+    affiliateRewardAmount: affiliateRewardAmount,
+    transaction_id: transaction.id,
+  };
+
+  context.PositionFeesInfo.set(feesInfo);
+
+  return feesInfo;
+}
+
+export async function savePositionFeesInfoWithPeriod(
+  positionFeeAmount: BigInt,
+  positionFeeAmountForPool: BigInt,
+  borrowingFeeUsd: BigInt,
+  tokenPrice: BigInt,
+  timestamp: number,
+  context: any
+): Promise<void> {
+  let dailyTimestampGroup = timestampToPeriodStart(timestamp, "1d");
+  let totalId = "total";
+  let dailyId = dailyTimestampGroup.toString();
+
+  let dailyFees = await getOrCreatePositionFeesInfoWithPeriod(
+    dailyId,
+    "1d",
+    context
+  );
+
+  let totalFees = await getOrCreatePositionFeesInfoWithPeriod(
+    totalId,
+    "total",
+    context
+  );
+
+  let positionFeeUsd = BigInt(Number(positionFeeAmount) * Number(tokenPrice));
+  let positionFeeUsdForPool = BigInt(
+    Number(positionFeeAmountForPool) * Number(tokenPrice)
+  );
+
+  dailyFees = {
+    ...dailyFees,
+    totalBorrowingFeeUsd: BigInt(
+      Number(dailyFees.totalBorrowingFeeUsd) + Number(borrowingFeeUsd)
+    ),
+
+    totalPositionFeeAmount: BigInt(
+      Number(dailyFees.totalPositionFeeAmount) + Number(positionFeeAmount)
+    ),
+
+    totalPositionFeeUsd: BigInt(
+      Number(dailyFees.totalPositionFeeUsd) + Number(positionFeeUsd)
+    ),
+
+    totalPositionFeeAmountForPool: BigInt(
+      Number(dailyFees.totalPositionFeeAmountForPool) +
+        Number(positionFeeAmountForPool)
+    ),
+
+    totalPositionFeeUsdForPool: BigInt(
+      Number(dailyFees.totalPositionFeeUsdForPool) +
+        Number(positionFeeUsdForPool)
+    ),
+  };
+
+  totalFees = {
+    ...totalFees,
+    totalBorrowingFeeUsd: BigInt(
+      Number(totalFees.totalBorrowingFeeUsd) + Number(borrowingFeeUsd)
+    ),
+
+    totalPositionFeeAmount: BigInt(
+      Number(totalFees.totalPositionFeeAmount) + Number(positionFeeAmount)
+    ),
+
+    totalPositionFeeUsd: BigInt(
+      Number(totalFees.totalPositionFeeUsd) + Number(positionFeeUsd)
+    ),
+
+    totalPositionFeeAmountForPool: BigInt(
+      Number(totalFees.totalPositionFeeAmountForPool) +
+        Number(positionFeeAmountForPool)
+    ),
+
+    totalPositionFeeUsdForPool: BigInt(
+      Number(totalFees.totalPositionFeeUsdForPool) +
+        Number(positionFeeUsdForPool)
+    ),
+  };
+
+  context.PositionFeesInfoWithPeriod.set(dailyFees);
+  context.PositionFeesInfoWithPeriod.set(totalFees);
+}
+
+async function getOrCreatePositionFeesInfoWithPeriod(
+  id: string,
+  period: string,
+  context: any
+): Promise<PositionFeesInfoWithPeriod> {
+  let feeInfo: PositionFeesInfoWithPeriod | undefined =
+    await context.PositionFeesInfoWithPeriod.get(id);
+  if (feeInfo == undefined) {
+    feeInfo = {
+      id: id,
+      period: period,
+      totalBorrowingFeeUsd: ZERO,
+      totalPositionFeeAmount: ZERO,
+      totalPositionFeeUsd: ZERO,
+      totalPositionFeeAmountForPool: ZERO,
+      totalPositionFeeUsdForPool: ZERO,
+    };
+  }
+
+  return feeInfo as PositionFeesInfoWithPeriod;
 }
 
 async function getOrCreateSwapFeesInfoWithPeriod(
