@@ -5,7 +5,7 @@ import {
   LatestUserGmTokensBalanceChangeRef,
 } from "generated/src/Types.gen";
 import { ONE, ZERO } from "../utils/number";
-import { getOrCreateCollectedMarketFees } from "./fee";
+import { getOrCreateCollectedMarketFees } from "./fees";
 
 export async function saveUserGmTokensBalanceChange(
   account: string,

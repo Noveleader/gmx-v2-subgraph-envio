@@ -177,7 +177,7 @@ type ClaimableCollateralGroup @entity {
   marketAddress: String!
   tokenAddress: String!
   factor: BigInt!
-  claimables: [ClaimableCollateral!]! @derivedFrom(field: "account")
+  claimables: [ClaimableCollateral!]! @derivedFrom(field: "marketAddress")
 }
 
 type SwapInfo @entity(immutable: true) {

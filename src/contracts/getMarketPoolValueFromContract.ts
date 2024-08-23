@@ -15,10 +15,16 @@ let MAX_PNL_FACTOR_FOR_TRADERS: string =
 export async function getMarketPoolValueFromContract(
   marketAddress: string,
   chainId: number,
+  transaction: Transaction,
   context: any
 ): Promise<BigInt> {
   let network = getNetworkFromChainId(chainId);
   let contractConfig = getReaderContractConfigByNetwork(network, context);
+
+  if (transaction.blockNumber < contractConfig.blockNumber) {
+    return ZERO;
+  }
+  
   const marketConfig = marketConfigs.get(marketAddress);
 
   if (!marketConfig) {

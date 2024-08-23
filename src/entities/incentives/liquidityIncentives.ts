@@ -1,6 +1,7 @@
 import {
   GlpGmMigrationStat,
   LiquidityProviderIncentivesStat,
+  MarketIncentivesStat,
   UserGlpGmMigrationStat,
   UserMarketInfo,
 } from "generated/src/Types.gen";
@@ -8,6 +9,9 @@ import { periodToSeconds, timestampToPeriodStart } from "../../utils/time";
 import { ZERO } from "../../utils/number";
 import { convertAmountToUsd, convertUsdToAmount } from "../prices";
 import { ZeroAddress } from "ethers";
+import { EventLog1Item } from "../../interfaces/interface";
+import { MarketPoolValueUpdatedEventData } from "../../utils/eventData/MarketPoolValueUpdatedEventData";
+import { getMarketInfo } from "../markets";
 
 let INCENTIVES_START_TIMESTAMP = 1699401600;
 let ARB_PRECISION = BigInt(10) ** BigInt(18);
@@ -418,4 +422,106 @@ export async function saveUserGlpGmMigrationStatGmData(
   context.UserGlpGmMigrationStat.set(entity);
 
   await _saveGlpGmMigrationStat(eligibleDiff, context);
+}
+
+export async function saveMarketIncentivesStat(
+  eventData: EventLog1Item,
+  event: any,
+  context: any
+): Promise<void> {
+  if (!_incentivesActive(event.block.timestamp)) {
+    return;
+  }
+
+  // tracks cumulative product of time and market tokens supply
+  // to calculate weighted average supply for the period
+  //
+  // for example:
+  // - on day 1: supply = 1000
+  // - on days 2-3: supply = 2000
+  // - on days 4-7: supply = 3000
+  // weighted average supply = (1000 * 1 + 2000 * 2 + 3000 * 4) / 7 = ~2427
+  //
+  // cumulative product is increased on each deposit or withdrawal:
+  // cumulative product = cumulative product + (previous tokens supply * time since last deposit/withdrawal)
+
+  let data = new MarketPoolValueUpdatedEventData(eventData);
+
+  let marketTokensSupply = data.marketTokensSupply;
+  let marketAddress = data.market;
+  let entity = await _getOrCreateMarketIncentivesStat(
+    marketAddress,
+    event.block.timestamp,
+    context
+  );
+
+  if (entity.updatedTimestamp == 0) {
+    // new entity was created
+    // interpolate cumulative time * marketTokensBalance starting from the beginning of the period
+
+    let marketInfo = await getMarketInfo(marketAddress, context);
+    let timeInSeconds = event.block.timestamp - entity.timestamp;
+    entity = {
+      ...entity,
+      cumulativeTimeByMarketTokensSupply:
+        marketInfo.marketTokensSupply * BigInt(timeInSeconds),
+    };
+  } else {
+    let timeInSeconds = event.block.timestamp - entity.updatedTimestamp;
+    entity = {
+      ...entity,
+      cumulativeTimeByMarketTokensSupply:
+        entity.cumulativeTimeByMarketTokensSupply +
+        entity.lastMarketTokensSupply,
+    };
+  }
+
+  entity = {
+    ...entity,
+    lastMarketTokensSupply: BigInt(marketTokensSupply.toString()),
+    updatedTimestamp: event.block.timestamp,
+  };
+
+  let endTimestamp = entity.timestamp + SECONDS_IN_WEEK;
+  let extrapolatedTimeByMarketTokensSupply =
+    entity.lastMarketTokensSupply * BigInt(endTimestamp) -
+    event.block.timestamp;
+
+  entity = {
+    ...entity,
+    weightedAverageMarketTokensSupply:
+      entity.cumulativeTimeByMarketTokensSupply +
+      extrapolatedTimeByMarketTokensSupply / BigInt(SECONDS_IN_WEEK),
+  };
+
+  context.MarketIncentivesStat.set(entity);
+}
+
+async function _getOrCreateMarketIncentivesStat(
+  marketAddress: string,
+  timestamp: number,
+  context: any
+): Promise<MarketIncentivesStat> {
+  let period = "1w";
+  let startTimestamp = timestampToPeriodStart(timestamp, period);
+  let id = marketAddress + ":" + period + ":" + startTimestamp.toString();
+
+  let entity: MarketIncentivesStat | undefined =
+    await context.MarketIncentivesStat.get(id);
+
+  if (entity == undefined) {
+    entity = {
+      id: id,
+      timestamp: startTimestamp,
+      period: period,
+      marketAddress: marketAddress,
+
+      updatedTimestamp: 0,
+      lastMarketTokensSupply: ZERO,
+      cumulativeTimeByMarketTokensSupply: ZERO,
+      weightedAverageMarketTokensSupply: ZERO,
+    };
+  }
+
+  return entity;
 }

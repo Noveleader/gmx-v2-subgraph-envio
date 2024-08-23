@@ -7,6 +7,7 @@ import {
 } from "generated/src/Types.gen";
 import {
   saveLiquidityProviderIncentivesStat,
+  saveMarketIncentivesStat,
   saveUserGlpGmMigrationStatGlpData,
   saveUserGlpGmMigrationStatGmData,
   saveUserMarketInfo,
@@ -34,7 +35,7 @@ import {
 } from "generated/src/Handlers.gen";
 import { EventLog1Item, EventLogItem } from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
-import { getTokenPrice } from "./entities/prices";
+import { getTokenPrice, handleOraclePriceUpdate } from "./entities/prices";
 import { saveUserStat } from "./entities/user";
 import {
   orderTypes,
@@ -61,12 +62,13 @@ import {
 } from "./entities/volume";
 import {
   getSwapActionByFeeType,
+  handlePositionImpactPoolDistributed,
   saveCollectedMarketFees,
   savePositionFeesInfo,
   savePositionFeesInfoWithPeriod,
   saveSwapFeesInfo,
   saveSwapFeesInfoWithPeriod,
-} from "./entities/fee";
+} from "./entities/fees";
 import { getMarketPoolValueFromContract } from "./contracts/getMarketPoolValueFromContract";
 import { getMarketTokensSupplyFromContract } from "./contracts/getMarketTokensSupplyFromContract";
 import { saveTradingIncentivesStat } from "./entities/incentives/tradingIncentives";
@@ -75,6 +77,14 @@ import {
   savePositionIncrease,
 } from "./entities/positions";
 import { size } from "viem";
+import {
+  handleCollateralClaimAction,
+  saveClaimableFundingFeeInfo as handleClaimableFundingUpdated,
+} from "./entities/claims";
+import {
+  handleClaimableCollateralUpdated,
+  handleCollateralClaimed,
+} from "./entities/priceImpactRebate";
 
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
 let SELL_USDG_ID = "last";
@@ -528,6 +538,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     let poolValue = await getMarketPoolValueFromContract(
       swapFeesInfo.marketAddress,
       event.chainId,
+      transaction,
       context
     );
 
@@ -590,6 +601,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     let poolValue = await getMarketPoolValueFromContract(
       positionFeesInfo.marketAddress,
       event.chainId,
+      transaction,
       context
     );
 
@@ -681,24 +693,59 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "FundingFeesClaimed") {
+    let transaction = await getOrCreateTransaction(event, context);
+    await handleCollateralClaimAction(
+      "ClaimFunding",
+      eventData,
+      transaction,
+      context
+    );
+    return;
   }
 
   if (eventName == "CollateralClaimed") {
+    let transaction = await getOrCreateTransaction(event, context);
+    await handleCollateralClaimAction(
+      "ClaimPriceImpact",
+      eventData,
+      transaction,
+      context
+    );
+
+    await handleCollateralClaimed(eventData, context);
   }
 
   if (eventName == "ClaimableFundingUpdated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    await handleClaimableFundingUpdated(eventData, transaction, context);
+    return;
   }
 
   if (eventName == "MarketPoolValueUpdated") {
+    // `saveMarketIncentivesStat should be called before `MarketPoolInfo` entity is updated
+    await saveMarketIncentivesStat(eventData, event, context);
+    return;
   }
 
   if (eventName == "PositionImpactPoolDistributed") {
+    let transaction = await getOrCreateTransaction(event, context);
+    await handlePositionImpactPoolDistributed(
+      eventData,
+      transaction,
+      event.chainId,
+      context
+    );
+    return;
   }
 
   if (eventName == "OraclePriceUpdate") {
+    await handleOraclePriceUpdate(eventData, context);
+    return;
   }
 
   if (eventName == "ClaimableCollateralUpdated") {
+    await handleClaimableCollateralUpdated(eventData, context);
+    return;
   }
 });
 

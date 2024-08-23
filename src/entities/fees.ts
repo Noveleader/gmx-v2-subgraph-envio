@@ -1,5 +1,6 @@
 import {
   CollectedMarketFeesInfo,
+  MarketInfo,
   PositionFeesInfo,
   PositionFeesInfoWithPeriod,
   SwapFeesInfo,
@@ -9,6 +10,11 @@ import {
 import { timestampToPeriodStart } from "../utils/time";
 import { ZERO } from "../utils/number";
 import { EventLog1Item } from "../interfaces/interface";
+import { EventLog } from "ethers";
+import { PositionImpactPoolDistributedEventData } from "../utils/eventData/PositionImpactPoolDistributedEventData";
+import { getTokenPrice } from "./prices";
+import { getMarketPoolValueFromContract } from "../contracts/getMarketPoolValueFromContract";
+import { getMarketTokensSupplyFromContract } from "../contracts/getMarketTokensSupplyFromContract";
 
 export let swapFeeTypes = new Map<string, string>();
 
@@ -454,6 +460,49 @@ export async function savePositionFeesInfoWithPeriod(
 
   context.PositionFeesInfoWithPeriod.set(dailyFees);
   context.PositionFeesInfoWithPeriod.set(totalFees);
+}
+
+export async function handlePositionImpactPoolDistributed(
+  eventData: EventLog1Item,
+  transaction: Transaction,
+  chainId: number,
+  context: any
+): Promise<void> {
+  let data = new PositionImpactPoolDistributedEventData(eventData);
+  let marketInfo: MarketInfo | undefined = await context.MarketInfo.get(
+    data.market
+  );
+
+  if (marketInfo == undefined) {
+    context.log.warn(`Market not found: {} ${[data.market]}`);
+    throw new Error("Market not found");
+  }
+
+  let indexToken = marketInfo.indexToken;
+  let tokenPrice = await getTokenPrice(indexToken, context);
+
+  let amountUsd =
+    BigInt(data.distributionAmount.toString()) * BigInt(tokenPrice.toString());
+  let poolValue = await getMarketPoolValueFromContract(
+    data.market,
+    chainId,
+    transaction,
+    context
+  );
+  let marketTokensSupply = await getMarketTokensSupplyFromContract(
+    data.market,
+    chainId,
+    context
+  );
+
+  await saveCollectedMarketFees(
+    transaction,
+    data.market,
+    poolValue,
+    amountUsd,
+    marketTokensSupply,
+    context
+  );
 }
 
 async function getOrCreatePositionFeesInfoWithPeriod(
