@@ -25,6 +25,7 @@ import {
   BatchSenderNew_BatchSend_handler,
   EventEmitter_EventLog1_contractRegister,
   EventEmitter_EventLog1_handler,
+  EventEmitter_EventLog2_handler,
   EventEmitter_EventLog_handler,
   GlpManager_RemoveLiquidity_handler,
   MarketTokenTemplate,
@@ -33,12 +34,17 @@ import {
   Vault,
   Vault_SellUSDG_handler,
 } from "generated/src/Handlers.gen";
-import { EventLog1Item, EventLogItem } from "./interfaces/interface";
+import {
+  EventLog1Item,
+  EventLog2Item,
+  EventLogItem,
+} from "./interfaces/interface";
 import { DepositRef_t } from "generated/src/db/Entities.gen";
 import { getTokenPrice, handleOraclePriceUpdate } from "./entities/prices";
 import { saveUserStat } from "./entities/user";
 import {
   orderTypes,
+  saveOrder,
   saveOrderCancelledState,
   saveOrderCollateralAutoUpdate,
   saveOrderExecutedState,
@@ -48,6 +54,7 @@ import {
 } from "./entities/orders";
 import {
   saveOrderCancelledTradeAction,
+  saveOrderCreatedTradeAction,
   saveOrderFrozenTradeAction,
   saveOrderUpdatedTradeAction,
   savePositionDecreaseExecutedTradeAction,
@@ -80,6 +87,8 @@ import { size } from "viem";
 import {
   handleCollateralClaimAction,
   saveClaimableFundingFeeInfo as handleClaimableFundingUpdated,
+  isFundingFeeSettleOrder,
+  saveClaimActionOnOrderCreated,
 } from "./entities/claims";
 import {
   handleClaimableCollateralUpdated,
@@ -745,6 +754,75 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
   if (eventName == "ClaimableCollateralUpdated") {
     await handleClaimableCollateralUpdated(eventData, context);
+    return;
+  }
+});
+
+EventEmitter_EventLog2_handler(async ({ event, context }) => {
+  let eventName = event.params.eventName;
+  let eventData: EventLog2Item = {
+    id: event.transaction.hash.concat(event.logIndex.toString()),
+    msgSender: event.params.msgSender,
+    eventName: event.params.eventName,
+    eventNameHash: event.params.eventNameHash,
+    topic1: event.params.topic1,
+    topic2: event.params.topic2,
+    eventData_addressItems_items: event.params.eventData[0][0]
+      .map((item) => item[1])
+      .flat(),
+    eventData_addressItems_arrayItems: event.params.eventData[0][1].map(
+      (item) => item[1]
+    ),
+    eventData_uintItems_items: event.params.eventData[1][0]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_uintItems_arrayItems: event.params.eventData[1][1].map((item) =>
+      item[1].toString()
+    ),
+    eventData_intItems_items: event.params.eventData[2][0]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_intItems_arrayItems: event.params.eventData[2][1]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_boolItems_items: event.params.eventData[3][0]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_boolItems_arrayItems: event.params.eventData[3][1]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_bytes32Items_items: event.params.eventData[4][0]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_bytes32Items_arrayItems: event.params.eventData[4][1]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_bytesItems_items: event.params.eventData[5][0]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_bytesItems_arrayItems: event.params.eventData[5][1]
+      .map((item) => item[1].toString())
+      .flat(),
+    eventData_stringItems_items: event.params.eventData[6][0]
+      .map((item) => item[1])
+      .flat(),
+    eventData_stringItems_arrayItems: event.params.eventData[6][1]
+      .map((item) => item[1])
+      .flat(),
+    blockNumber: BigInt(event.block.number),
+    blockTimestamp: BigInt(event.block.timestamp),
+    transactionHash: event.transaction.hash,
+  };
+  let eventId = getIdFromEvent(event);
+
+  if (eventName == "OrderCreated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = saveOrder(eventData, transaction, context);
+    if (isFundingFeeSettleOrder(order)) {
+      await saveClaimActionOnOrderCreated(transaction, eventData, context);
+    } else {
+      saveOrderCreatedTradeAction(eventId, order, transaction, context);
+    }
     return;
   }
 });

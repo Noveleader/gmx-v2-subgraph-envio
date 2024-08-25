@@ -57,7 +57,7 @@ export interface EventLog2Item {
   transactionHash: string;
   blockNumber: BigInt;
   blockTimestamp: BigInt;
-  eventData_addressItems_arrayItems: string[];
+  eventData_addressItems_arrayItems: string[][];
   eventData_addressItems_items: string[];
   eventData_boolItems_arrayItems: string[];
   eventData_boolItems_items: string[];

@@ -288,3 +288,22 @@ export async function saveOrderFrozenTradeAction(
 
   return tradeAction;
 }
+
+export async function saveOrderCreatedTradeAction(
+  eventId: string,
+  order: Order,
+  transaction: Transaction,
+  context: any
+): Promise<TradeAction> {
+  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  tradeAction = {
+    ...tradeAction,
+    eventName: "OrderCreated",
+    transaction_id: transaction.id,
+    timestamp: transaction.timestamp,
+  };
+
+  context.TradeAction.set(tradeAction);
+
+  return tradeAction;
+}

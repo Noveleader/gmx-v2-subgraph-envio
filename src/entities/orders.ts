@@ -1,5 +1,5 @@
 import { Order, Transaction } from "generated/src/Types.gen";
-import { EventLog1Item } from "../interfaces/interface";
+import { EventLog1Item, EventLog2Item } from "../interfaces/interface";
 import { eventNames } from "process";
 
 export let orderTypes = new Map<string, BigInt>();
@@ -183,4 +183,85 @@ export async function saveOrderCollateralAutoUpdate(
   context.Order.set(order);
 
   return order as Order;
+}
+
+export function saveOrder(
+  eventData: EventLog2Item,
+  transaction: Transaction,
+  context: any
+): Order {
+  let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
+
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+
+  let eventDataAddressItemsArrayItems =
+    eventData.eventData_addressItems_arrayItems;
+
+  let eventDataUintItemsItems = eventData.eventData_uintItems_items;
+
+  let eventDataBoolItemsItems = eventData.eventData_boolItems_items;
+
+  let key = eventDataBytes32ItemsItems[0];
+
+  let account: string = eventDataAddressItemsItems[0];
+  let receiver: string = eventDataAddressItemsItems[1];
+  let callbackContract: string = eventDataAddressItemsItems[2];
+  let marketAddress: string = eventDataAddressItemsItems[4];
+  let initialCollateralTokenAddress: string = eventDataAddressItemsItems[5];
+
+  let swapPath: Array<string> = eventDataAddressItemsArrayItems[0];
+
+  let sizeDeltaUsd: BigInt = BigInt(eventDataUintItemsItems[2]);
+  let initialCollateralDeltaAmount: BigInt = BigInt(eventDataUintItemsItems[3]);
+  let triggerPrice: BigInt = BigInt(eventDataUintItemsItems[4]);
+  let acceptablePrice: BigInt = BigInt(eventDataUintItemsItems[5]);
+  let callbackGasLimit: BigInt = BigInt(eventDataUintItemsItems[7]);
+  let minOutputAmount: BigInt = BigInt(eventDataUintItemsItems[8]);
+  let executionFee: BigInt = BigInt(eventDataUintItemsItems[6]);
+  let updatedAtBlock: BigInt = BigInt(eventDataUintItemsItems[9]);
+  let orderType: BigInt = BigInt(eventDataUintItemsItems[0]);
+
+  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let shouldUnwrapNativeToken: boolean = Boolean(eventDataBoolItemsItems[1]);
+  let isFrozen: boolean = Boolean(eventDataBoolItemsItems[2]);
+
+  let order: Order = {
+    id: key,
+
+    account: account,
+    receiver: receiver,
+    callbackContract: callbackContract,
+    marketAddress: marketAddress,
+    swapPath: swapPath,
+    initialCollateralTokenAddress: initialCollateralTokenAddress,
+
+    sizeDeltaUsd: BigInt(Number(sizeDeltaUsd)),
+    initialCollateralDeltaAmount: BigInt(Number(initialCollateralDeltaAmount)),
+    triggerPrice: BigInt(Number(triggerPrice)),
+    acceptablePrice: BigInt(Number(acceptablePrice)),
+    callbackGasLimit: BigInt(Number(callbackGasLimit)),
+    minOutputAmount: BigInt(Number(minOutputAmount)),
+    executionFee: BigInt(Number(executionFee)),
+
+    updatedAtBlock: BigInt(Number(updatedAtBlock)),
+
+    orderType: BigInt(Number(orderType)),
+
+    isLong: isLong,
+    shouldUnwrapNativeToken: shouldUnwrapNativeToken,
+
+    status: isFrozen ? "Frozen" : "Created",
+
+    cancelledReason: "",
+    cancelledReasonBytes: "",
+    frozenReason: "",
+    frozenReasonBytes: "",
+
+    createdTxn_id: transaction.id,
+    cancelledTxn_id: transaction.id,
+    executedTxn_id: transaction.id,
+  };
+
+  context.Order.set(order);
+  return order;
 }

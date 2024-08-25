@@ -2,11 +2,14 @@ import {
   ClaimableFundingFeeInfo,
   ClaimAction,
   ClaimCollateralAction,
+  ClaimRef,
+  Order,
   Transaction,
 } from "generated";
 import { CollateralClaimedEventData } from "../utils/eventData/CollateralClaimedEventData";
 import { ClaimActionType_t } from "generated/src/db/Enums.gen";
-import { EventLog1Item } from "../interfaces/interface";
+import { EventLog1Item, EventLog2Item } from "../interfaces/interface";
+import { orderTypes } from "./orders";
 
 export async function handleCollateralClaimAction(
   eventName: string,
@@ -81,6 +84,65 @@ export async function saveClaimableFundingFeeInfo(
   context.ClaimableFundingFeeInfo.set(entity);
 
   return entity;
+}
+
+export function isFundingFeeSettleOrder(order: Order): boolean {
+  return (
+    order.initialCollateralDeltaAmount == BigInt(1) &&
+    order.sizeDeltaUsd == BigInt(0) &&
+    order.orderType == orderTypes.get("MarketDecrease")
+  );
+}
+
+export async function saveClaimActionOnOrderCreated(
+  transaction: Transaction,
+  eventData: EventLog2Item,
+  context: any
+): Promise<void> {
+  let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
+
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+
+  let eventDataBoolItemsItems = eventData.eventData_boolItems_items;
+
+  let orderId = eventDataBytes32ItemsItems[0];
+
+  let claimAction = await getOrCreateClaimAction(
+    "SettleFundingFeeCreated",
+    eventData,
+    transaction,
+    context
+  );
+
+  let marketAddress = eventDataAddressItemsItems[4];
+  let marketAddresses = claimAction.marketAddresses;
+  marketAddresses.push(marketAddress);
+
+  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let isLongOrders = claimAction.isLongOrders;
+  isLongOrders.push(isLong);
+
+  claimAction = {
+    ...claimAction,
+    marketAddresses: marketAddresses,
+    isLongOrders: isLongOrders,
+  };
+
+  context.ClaimAction.set(claimAction);
+  await createClaimRefIfNotExists(orderId, context);
+}
+
+async function createClaimRefIfNotExists(
+  orderId: string,
+  context: any
+): Promise<void> {
+  const claimRef: ClaimRef | undefined = await context.CLaimRef.get(orderId);
+  if (claimRef == undefined) {
+    let entity: ClaimRef = {
+      id: orderId,
+    };
+    context.ClaimRef.set(entity);
+  }
 }
 
 async function getOrCreateClaimCollateralAction(
