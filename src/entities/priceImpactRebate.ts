@@ -4,6 +4,7 @@ import { CollateralClaimedEventData } from "../utils/eventData/CollateralClaimed
 import { ClaimableCollateralUpdatedEventData } from "../utils/eventData/ClaimableCollateralUpdatedEventData";
 import { SetClaimableCollateralFactorForTimeEventData } from "../utils/eventData/SetClaimableCollateralFactorForTime";
 import { SetClaimableCollateralFactorForAccountEventData } from "../utils/eventData/SetClaimableCollateralFactorForAccount";
+import { neonDevnet } from "viem/chains";
 
 export async function handleCollateralClaimed(
   eventData: EventLog1Item,
@@ -81,7 +82,18 @@ export async function handleClaimableCollateralUpdated(
     factorByTime: groupEntity.factor,
   };
 
+  let claimables = groupEntity.claimables;
+  if (!claimables.includes(entity.id)) {
+    claimables.push(entity.id);
+  }
+
+  groupEntity = {
+    ...groupEntity,
+    claimables: claimables,
+  };
+
   context.ClaimableCollateral.set(entity);
+  context.ClaimableCollateralGroup.set(entity);
 }
 
 export async function handleSetClaimableCollateralFactorForTime(
@@ -102,6 +114,34 @@ export async function handleSetClaimableCollateralFactorForTime(
     factor: BigInt(Number(data.factor)),
   };
 
+  let claimables = entity.claimables;
+
+  for (let i = 0; i < claimables.length; i++) {
+    let id = claimables[i];
+
+    if (!id) {
+      context.log.warn(
+        `ClaimableCollateral id is undefined {} ${[i.toString()]}`
+      );
+      throw new Error("ClaimableCollateral id is undefined");
+    }
+
+    let claimable: ClaimableCollateral | undefined =
+      await context.ClaimableCollateral.get(id);
+
+    if (claimable == undefined) {
+      context.log.warn(`ClaimableCollateral not found {} ${[id]}`);
+      throw new Error("ClaimableCollateral not found");
+    }
+
+    claimable = {
+      ...claimable,
+      factorByTime: BigInt(data.factor.toString()),
+    };
+
+    context.ClaimableCollateral.set(claimable);
+  }
+  
   context.ClaimableCollateralGroup.set(entity);
 }
 
@@ -144,6 +184,7 @@ async function getOrCreateClaimableCollateralGroup(
       tokenAddress: token,
       timeKey: timeKey,
       factor: BigInt(0),
+      claimables: new Array<string>(0),
     };
   }
 
