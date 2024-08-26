@@ -1,4 +1,5 @@
 import {
+  ClaimRef,
   DepositRef,
   EventEmitter_EventLog_eventArgs,
   MarketInfo,
@@ -845,6 +846,120 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
 
   if (eventName == "DepositExecuted") {
     await handleDepositExecuted(event, eventData, context);
+    return;
+  }
+
+  if (eventName == "WithdrawalCreated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let account = eventData.eventData_addressItems_items[0];
+    await saveUserStat("withdrawal", account, transaction.timestamp, context);
+    return;
+  }
+
+  if (eventName == "OrderExecuted") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderExecutedState(eventData, transaction, context);
+
+    if (order == undefined) {
+      return;
+    }
+
+    if (
+      order.orderType == orderTypes.get("MarketSwap") ||
+      order.orderType == orderTypes.get("LimitSwap")
+    ) {
+      await saveSwapExecutedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    } else if (
+      order.orderType == orderTypes.get("MarketIncrease") ||
+      order.orderType == orderTypes.get("LimitIncrease")
+    ) {
+      await savePositionIncreaseExecutedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    } else if (
+      order.orderType == orderTypes.get("MarketDecrease") ||
+      order.orderType == orderTypes.get("LimitDecrease") ||
+      order.orderType == orderTypes.get("StopLossDecrease") ||
+      order.orderType == orderTypes.get("Liquidation")
+    ) {
+      let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
+      if (claimRef != undefined) {
+        await saveClaimActionOnOrderCreated(transaction, eventData, context);
+      } else {
+        await savePositionDecreaseExecutedTradeAction(
+          eventId,
+          order as Order,
+          transaction,
+          context
+        );
+      }
+    }
+    return;
+  }
+
+  if (eventName == "OrderCancelled") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderCancelledState(eventData, transaction, context);
+
+    if (order != null) {
+      let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
+
+      if (claimRef != undefined) {
+        await saveClaimActionOnOrderCreated(transaction, eventData, context);
+      } else {
+        await saveOrderCancelledTradeAction(
+          eventId,
+          order!,
+          order.cancelledReason as string,
+          order.cancelledReasonBytes as string,
+          transaction,
+          context
+        );
+      }
+    }
+    return;
+  }
+
+  if (eventName == "OrderUpdated") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderUpdate(eventData, context);
+
+    if (order !== null) {
+      await saveOrderUpdatedTradeAction(
+        eventId,
+        order as Order,
+        transaction,
+        context
+      );
+    }
+    return;
+  }
+
+  if (eventName == "OrderFrozen") {
+    let transaction = await getOrCreateTransaction(event, context);
+    let order = await saveOrderFrozenState(eventData, context);
+
+    if (order == null) {
+      return;
+    }
+
+    await saveOrderFrozenTradeAction(
+      eventId,
+      order as Order,
+      order.frozenReason as string,
+      order.frozenReasonBytes as string,
+      transaction,
+      context
+    );
+
     return;
   }
 });

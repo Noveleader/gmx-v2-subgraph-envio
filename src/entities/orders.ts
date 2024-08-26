@@ -14,7 +14,7 @@ orderTypes.set("StopLossDecrease", BigInt(6));
 orderTypes.set("Liquidation", BigInt(7));
 
 export async function saveOrderExecutedState(
-  eventData: EventLog1Item,
+  eventData: EventLog1Item | EventLog2Item,
   transaction: Transaction,
   context: any
 ): Promise<Order | null> {
@@ -40,7 +40,7 @@ export async function saveOrderExecutedState(
 }
 
 export async function saveOrderCancelledState(
-  eventData: EventLog1Item,
+  eventData: EventLog1Item | EventLog2Item,
   transaction: Transaction,
   context: any
 ): Promise<Order | null> {
@@ -73,7 +73,7 @@ export async function saveOrderCancelledState(
 }
 
 export async function saveOrderUpdate(
-  eventData: EventLog1Item,
+  eventData: EventLog1Item | EventLog2Item,
   context: any
 ): Promise<Order | null> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -104,7 +104,7 @@ export async function saveOrderUpdate(
 }
 
 export async function saveOrderFrozenState(
-  eventData: EventLog1Item,
+  eventData: EventLog1Item | EventLog2Item,
   context: any
 ): Promise<Order | null> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
