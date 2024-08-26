@@ -1,7 +1,9 @@
 import { ClaimableCollateral, ClaimableCollateralGroup } from "generated";
-import { EventLog1Item } from "../interfaces/interface";
+import { EventLog1Item, EventLog2Item } from "../interfaces/interface";
 import { CollateralClaimedEventData } from "../utils/eventData/CollateralClaimedEventData";
 import { ClaimableCollateralUpdatedEventData } from "../utils/eventData/ClaimableCollateralUpdatedEventData";
+import { SetClaimableCollateralFactorForTimeEventData } from "../utils/eventData/SetClaimableCollateralFactorForTime";
+import { SetClaimableCollateralFactorForAccountEventData } from "../utils/eventData/SetClaimableCollateralFactorForAccount";
 
 export async function handleCollateralClaimed(
   eventData: EventLog1Item,
@@ -77,6 +79,49 @@ export async function handleClaimableCollateralUpdated(
     ...entity,
     value: BigInt(data.nextValue.toString()),
     factorByTime: groupEntity.factor,
+  };
+
+  context.ClaimableCollateral.set(entity);
+}
+
+export async function handleSetClaimableCollateralFactorForTime(
+  eventData: EventLog2Item,
+  context: any
+): Promise<void> {
+  let data = new SetClaimableCollateralFactorForTimeEventData(eventData);
+
+  let entity = await getOrCreateClaimableCollateralGroup(
+    data.market,
+    data.token,
+    data.timeKey,
+    context
+  );
+
+  entity = {
+    ...entity,
+    factor: BigInt(Number(data.factor)),
+  };
+
+  context.ClaimableCollateralGroup.set(entity);
+}
+
+export async function handleSetClaimableCollateralFactorForAccount(
+  eventData: EventLog2Item,
+  context: any
+): Promise<void> {
+  let data = new SetClaimableCollateralFactorForAccountEventData(eventData);
+
+  let entity = await getOrCreateClaimableCollateral(
+    data.account,
+    data.market,
+    data.token,
+    data.timeKey,
+    context
+  );
+
+  entity = {
+    ...entity,
+    factor: BigInt(Number(data.factor)),
   };
 
   context.ClaimableCollateral.set(entity);

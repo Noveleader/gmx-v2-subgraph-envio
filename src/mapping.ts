@@ -93,6 +93,8 @@ import {
 import {
   handleClaimableCollateralUpdated,
   handleCollateralClaimed,
+  handleSetClaimableCollateralFactorForAccount,
+  handleSetClaimableCollateralFactorForTime,
 } from "./entities/priceImpactRebate";
 
 let ADDRESS_ZERO = "0x0000000000000000000000000000000000000000";
@@ -825,11 +827,31 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
     }
     return;
   }
+
+  if (eventName == "SetClaimableCollateralFactorForTime") {
+    await handleSetClaimableCollateralFactorForTime(eventData, context);
+    return;
+  }
+
+  if (eventName == "SetClaimableCollateralFactorForAccount") {
+    await handleSetClaimableCollateralFactorForAccount(eventData, context);
+    return;
+  }
+
+  if (eventName == "DepositCreated") {
+    await handleDepositCreated(event, eventData, context);
+    return;
+  }
+
+  if (eventName == "DepositExecuted") {
+    await handleDepositExecuted(event, eventData, context);
+    return;
+  }
 });
 
 async function handleDepositCreated(
   event: any,
-  eventData: EventLog1Item,
+  eventData: EventLog1Item | EventLog2Item,
   context: any
 ): Promise<void> {
   let transaction = await getOrCreateTransaction(event, context);
@@ -847,7 +869,7 @@ async function handleDepositCreated(
 
 async function handleDepositExecuted(
   event: any,
-  eventData: EventLogItem,
+  eventData: EventLogItem | EventLog2Item,
   context: any
 ): Promise<void> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
