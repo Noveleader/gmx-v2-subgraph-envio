@@ -319,7 +319,7 @@ EventEmitter_EventLog_handler(async ({ event, context }) => {
   };
 
   if (eventName == "DepositExecuted") {
-    handleDepositExecuted(event, eventData, context);
+    await handleDepositExecuted(event, eventData, context);
   }
 });
 
@@ -388,7 +388,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "DepositCreated") {
-    handleDepositCreated(event, eventData, context);
+    await handleDepositCreated(event, eventData, context);
     return;
   }
 
@@ -992,7 +992,7 @@ async function handleDepositExecuted(
   let eventDataUintItemsItems = eventData.eventData_uintItems_items;
 
   let key: string = eventDataBytes32ItemsItems[0];
-  let depositRef: DepositRef = await context.DepositRef.get(key);
+  let depositRef: DepositRef = await context.DepositRef.get(key)!;
   let marketInfo: MarketInfo = await context.MarketInfo.get(
     depositRef.marketAddress
   )!;
@@ -1009,11 +1009,10 @@ async function handleDepositExecuted(
     context
   )!;
 
-  let depositUsd: BigInt = BigInt(
-    Number(longTokenAmount) * Number(longTokenPrice) +
-      Number(shortTokenAmount) * Number(shortTokenPrice)
-  );
-
+  let depositUsd: BigInt =
+    BigInt(longTokenAmount.toString()) * BigInt(longTokenPrice.toString()) +
+    BigInt(shortTokenAmount.toString()) * BigInt(shortTokenPrice.toString());
+    
   await saveUserGlpGmMigrationStatGmData(
     depositRef.account,
     event.block.timestamp,

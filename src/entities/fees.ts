@@ -274,10 +274,16 @@ function getUpdatedFeeUsdPerGmToken(
     return ZERO;
   }
 
-  return BigInt(
-    Number(feeInfo.feeUsdPerGmToken) +
-      (Number(fee) * Number(BigInt(10) ** BigInt(18))) /
-        Number(marketTokensSupply)
+  // return BigInt(
+  //   Number(feeInfo.feeUsdPerGmToken) +
+  //     (Number(fee) * Number(BigInt(10) ** BigInt(18))) /
+  //       Number(marketTokensSupply)
+  // );
+
+  return (
+    (feeInfo.feeUsdPerGmToken +
+      BigInt(fee.toString()) * BigInt(10) ** BigInt(18)) /
+    BigInt(marketTokensSupply.toString())
   );
 }
 
@@ -350,9 +356,9 @@ export async function savePositionFeesInfo(
   let positionFeeAmount = BigInt(eventDataUintItemsItems[24]);
   let borrowingFeeAmount = BigInt(eventDataUintItemsItems[15]);
   let fundingFeeAmount = BigInt(eventDataUintItemsItems[8]);
-  let feeUsdForPool = BigInt(
-    Number(eventDataUintItemsItems[22]!) * Number(collateralTokenPriceMin)
-  );
+  let feeUsdForPool =
+    BigInt(eventDataUintItemsItems[22]!.toString()) *
+    BigInt(collateralTokenPriceMin.toString());
 
   let totalRebateAmount = BigInt(eventDataUintItemsItems[5]);
   let totalRebateFactor = BigInt(eventDataUintItemsItems[3]);
