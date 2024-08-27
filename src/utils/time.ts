@@ -1,6 +1,11 @@
 export function timestampToPeriodStart(timestamp: number, period: string) {
   let seconds = periodToSeconds(period);
 
+  // in case of "1w" period it will be rounded to start on Thursday
+  // in GMX weekly distributions start on Wendesdays
+  // so timestamp needs to be shifted before rounding and then shifted back after:
+  // period start = (timestamp + 86400) / seconds * seconds - 86400
+
   if (period == "1w") {
     timestamp += 86400;
   }
@@ -11,7 +16,7 @@ export function timestampToPeriodStart(timestamp: number, period: string) {
     start -= 86400;
   }
 
-  return start;
+  return Math.floor(start);
 }
 
 export function periodToSeconds(period: string): number {

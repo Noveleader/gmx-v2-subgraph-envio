@@ -237,7 +237,7 @@ export async function savePositionVolumeInfo(
     "total",
     context
   );
-  
+
   hourlyVolumeInfo = {
     ...hourlyVolumeInfo,
     volumeUsd: hourlyVolumeInfo.volumeUsd + BigInt(sizeInUsd.toString()),
@@ -266,6 +266,12 @@ async function getOrCreatePositionVolumeInfo(
   context: any
 ): Promise<PositionVolumeInfo> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
+  // context.log.debug(
+  //   `Timestamp for {getOrCreatePositionVolumeInfo} is ${timestamp}`
+  // );
+  // context.log.debug(
+  //   `Timestamp Group for {getOrCreatePositionVolumeInfo} is ${timestampGroup}`
+  // );
   let id = getVolumeInfoId(collateralToken, indexToken) + ":" + period;
   if (period != "total") {
     id = id + ":" + timestampGroup.toString();

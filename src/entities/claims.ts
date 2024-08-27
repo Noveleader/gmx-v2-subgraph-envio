@@ -96,7 +96,7 @@ export function isFundingFeeSettleOrder(order: Order): boolean {
 
 export async function saveClaimActionOnOrderCreated(
   transaction: Transaction,
-  eventData: EventLog2Item,
+  eventData: EventLog2Item | EventLog1Item,
   context: any
 ): Promise<void> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -147,14 +147,14 @@ async function createClaimRefIfNotExists(
 
 async function getOrCreateClaimCollateralAction(
   eventName: string,
-  eventData: any,
+  eventData: EventLog1Item,
   transaction: Transaction,
   context: any
 ): Promise<ClaimCollateralAction> {
-  let eventDataAddressItemsItems = eventData[0][0]
-    .map((item: any) => item[1])
-    .flat();
-  let account: string = eventDataAddressItemsItems[3];
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+
+  let account: string = eventDataAddressItemsItems[2];
+
   let id = transaction.id + ":" + account + ":" + eventName;
   let entity: ClaimCollateralAction | undefined =
     await context.ClaimCollateralAction.get(id);
@@ -179,14 +179,13 @@ async function getOrCreateClaimCollateralAction(
 
 async function getOrCreateClaimAction(
   eventName: string,
-  eventData: any,
+  eventData: EventLog1Item | EventLog2Item,
   transaction: Transaction,
   context: any
 ): Promise<ClaimAction> {
-  let eventDataAddressItemsItems = eventData[0][0]
-    .map((item: any) => item[1])
-    .flat();
-  let account: string = eventDataAddressItemsItems[3];
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+  let account: string = eventDataAddressItemsItems[2];
+
   let id = transaction.id + ":" + account + ":" + eventName;
   let entity: ClaimAction | undefined = await context.ClaimAction.get(id);
 
