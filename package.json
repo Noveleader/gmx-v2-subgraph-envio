@@ -22,7 +22,7 @@
   },
   "dependencies": {
     "chai": "4.3.10",
-    "envio": "^2.0.1",
+    "envio": "^2.1.2",
     "ethers": "6.8.0",
     "viem": "1.16.6"
   },

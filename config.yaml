@@ -67,6 +67,8 @@ networks:
         address: 0x0BEa5D3081921A08d73f150126f99cda0eb29C0e
       - name: MarketTokenTemplate
 
+rollback_on_reorg: false
+
 field_selection:
   transaction_fields:
     - "hash"

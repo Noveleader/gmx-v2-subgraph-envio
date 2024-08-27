@@ -47,20 +47,26 @@ export async function getMarketPoolValueFromContract(
   let longTokenPriceArg = await getTokenPriceProps(longToken, context);
   let shortTokenPriceArg = await getTokenPriceProps(shortToken, context);
 
+  let args = [
+    contractConfig.dataStoreAddress,
+    marketArg,
+    indexTokenPriceArg,
+    longTokenPriceArg,
+    shortTokenPriceArg,
+    MAX_PNL_FACTOR_FOR_TRADERS,
+    true,
+  ];
+
+  // context.log.debug(`Args are the following: ${args}`);
+
   let tx = (await client.readContract({
     address: getReaderAddress(chainId) as Address,
     abi: Reader.abi,
     functionName: "getMarketTokenPrice",
-    args: [
-      contractConfig.dataStoreAddress,
-      marketArg,
-      indexTokenPriceArg,
-      longTokenPriceArg,
-      shortTokenPriceArg,
-      MAX_PNL_FACTOR_FOR_TRADERS,
-      true,
-    ],
+    args: args,
   })) as any;
+
+  // context.log.debug(`Pool Valuue is ${tx[1].poolValue}`);
 
   return tx[1].poolValue;
 }
