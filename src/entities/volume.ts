@@ -237,7 +237,7 @@ export async function savePositionVolumeInfo(
     "total",
     context
   );
-
+  
   hourlyVolumeInfo = {
     ...hourlyVolumeInfo,
     volumeUsd: hourlyVolumeInfo.volumeUsd + BigInt(sizeInUsd.toString()),
@@ -273,7 +273,7 @@ async function getOrCreatePositionVolumeInfo(
   let volumeInfo: PositionVolumeInfo | undefined =
     await context.PositionVolumeInfo.get(id);
 
-  if (volumeInfo == undefined) {
+  if (volumeInfo === undefined) {
     volumeInfo = {
       id: id,
       collateralToken: collateralToken,

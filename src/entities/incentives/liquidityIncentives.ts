@@ -472,7 +472,7 @@ export async function saveMarketIncentivesStat(
       ...entity,
       cumulativeTimeByMarketTokensSupply:
         entity.cumulativeTimeByMarketTokensSupply +
-        entity.lastMarketTokensSupply,
+        entity.lastMarketTokensSupply * BigInt(timeInSeconds),
     };
   }
 

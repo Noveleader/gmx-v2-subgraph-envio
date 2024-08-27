@@ -227,7 +227,8 @@ function updateCollectedFeesFractions(
     feeUsdPerPoolValue: getUpdatedFeeUsdPerPoolValue(
       feesEntity,
       feeUsdForPool,
-      poolValue
+      poolValue,
+      context
     ),
     cumulativeFeeUsdPerPoolValue: totalFeesEntity.feeUsdPerPoolValue,
 
@@ -239,21 +240,28 @@ function updateCollectedFeesFractions(
     prevCumulativeFeeUsdPerGmToken: prevCumulativeFeeUsdPerGmToken,
     cumulativeFeeUsdPerGmToken: totalFeesEntity.feeUsdPerGmToken,
   };
+
   context.CollectedMarketFeesInfo.set(feesEntity);
 }
 
 function getUpdatedFeeUsdPerPoolValue(
   feeInfo: CollectedMarketFeesInfo,
   fee: BigInt,
-  poolValue: BigInt
+  poolValue: BigInt,
+  context: any
 ): bigint {
   if (poolValue == ZERO) {
     return ZERO;
   }
 
-  return BigInt(
-    Number(feeInfo.feeUsdPerPoolValue) +
-      (Number(fee) * Number(BigInt(10) ** BigInt(30))) / Number(poolValue)
+  // context.log.debug(`Fee Info is ${feeInfo}`);
+  // context.log.debug(`Pool Value is: ${poolValue}`);
+  // context.log.debug(`Fee value is: ${fee}`);
+
+  return (
+    (feeInfo.feeUsdPerPoolValue +
+      BigInt(fee.toString()) * BigInt(10) ** BigInt(30)) /
+    BigInt(poolValue.toString())
   );
 }
 
@@ -331,8 +339,6 @@ export async function savePositionFeesInfo(
 
   let id = orderKey + ":" + eventName;
 
-  let feesInfo: PositionFeesInfo = await context.PositionFeesInfo.get(id);
-
   let marketAddress = eventDataAddressItemsItems[0];
   let collateralTokenAddress = eventDataAddressItemsItems[1];
   let affiliate = eventDataAddressItemsItems[2];
@@ -353,8 +359,8 @@ export async function savePositionFeesInfo(
   let traderDiscountAmount = BigInt(eventDataUintItemsItems[6]);
   let affiliateRewardAmount = BigInt(eventDataUintItemsItems[7]);
 
-  feesInfo = {
-    ...feesInfo,
+  let feesInfo: PositionFeesInfo = {
+    id: id,
     orderKey: orderKey,
     eventName: eventName,
     marketAddress: marketAddress,

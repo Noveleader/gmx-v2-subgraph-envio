@@ -20,7 +20,7 @@ export async function saveSwapExecutedTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<void> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   let swapPath = order.swapPath!;
 
@@ -58,30 +58,50 @@ export async function saveSwapExecutedTradeAction(
   context.TradeAction.set(tradeAction);
 }
 
-export async function getTradeActionFromOrder(
+export function getTradeActionFromOrder(
   eventId: string,
-  order: Order,
-  context: any
-): Promise<TradeAction> {
-  let tradeAction = await context.TradeAction.get(eventId);
-
+  order: Order
+): TradeAction {
   let newTradeActionEntity: TradeAction = {
-    ...tradeAction,
+    id: eventId,
+    eventName: "",
+
     orderKey: order.id,
+    orderType: order.orderType,
+
     account: order.account,
     marketAddress: order.marketAddress,
     swapPath: order.swapPath,
     initialCollateralTokenAddress: order.initialCollateralTokenAddress,
-
     initialCollateralDeltaAmount: order.initialCollateralDeltaAmount,
+
     sizeDeltaUsd: order.sizeDeltaUsd,
     triggerPrice: order.triggerPrice,
     acceptablePrice: order.acceptablePrice,
-    minOutputAmount: order.minOutputAmount,
+    executionPrice: undefined,
+    collateralTokenPriceMin: undefined,
+    collateralTokenPriceMax: undefined,
+    indexTokenPriceMin: undefined,
+    indexTokenPriceMax: undefined,
+    priceImpactDiffUsd: undefined,
+    priceImpactUsd: undefined,
+    priceImpactAmount: undefined,
+    positionFeeAmount: undefined,
+    borrowingFeeAmount: undefined,
+    fundingFeeAmount: undefined,
+    pnlUsd: undefined,
+    basePnlUsd: undefined,
+    isLong: undefined,
 
-    orderType: order.orderType,
+    minOutputAmount: order.minOutputAmount,
+    executionAmountOut: undefined,
     shouldUnwrapNativeToken: order.shouldUnwrapNativeToken,
-    isLong: order.isLong,
+
+    reason: undefined,
+    reasonBytes: undefined,
+
+    timestamp: 0,
+    transaction_id: "",
   };
 
   return newTradeActionEntity;
@@ -93,14 +113,14 @@ export async function savePositionIncreaseExecutedTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   let positionIncrease: PositionIncrease | undefined =
     await context.PositionIncrease.get(order.id);
 
   let marketInfo = await getMarketInfo(order.marketAddress, context);
 
-  let tokenPrice = await context.TokenPrice.get(marketInfo);
+  let tokenPrice = await context.TokenPrice.get(marketInfo.indexToken);
 
   tradeAction = {
     ...tradeAction,
@@ -136,7 +156,7 @@ export async function savePositionDecreaseExecutedTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<void> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   let positionDecrease: PositionDecrease | undefined =
     await context.PositionDecrease.get(order.id);
@@ -168,7 +188,7 @@ export async function savePositionDecreaseExecutedTradeAction(
   }
 
   if (positionFeesInfo == undefined) {
-    positionFeesInfo = await context.PositionFeeInfo.get(
+    positionFeesInfo = await context.PositionFeesInfo.get(
       order.id + ":" + "PositionFeesCollected"
     );
   }
@@ -219,7 +239,7 @@ export async function saveOrderCancelledTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   tradeAction = {
     ...tradeAction,
@@ -241,7 +261,7 @@ export async function saveOrderUpdatedTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   tradeAction = {
     ...tradeAction,
@@ -263,7 +283,7 @@ export async function saveOrderFrozenTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
 
   if (order.marketAddress != ZERO_ADDRESS) {
     let marketInfo = await getMarketInfo(order.marketAddress, context);
@@ -295,7 +315,7 @@ export async function saveOrderCreatedTradeAction(
   transaction: Transaction,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = await getTradeActionFromOrder(eventId, order, context);
+  let tradeAction = getTradeActionFromOrder(eventId, order);
   tradeAction = {
     ...tradeAction,
     eventName: "OrderCreated",

@@ -21,7 +21,7 @@ export function savePositionIncrease(
 
   let account: string = eventDataAddressItemsItems[0];
   let marketAddress: string = eventDataAddressItemsItems[1];
-  let collateralTokenAddress: string = eventDataAddressItemsItems[3];
+  let collateralTokenAddress: string = eventDataAddressItemsItems[2];
 
   let collateralTokenPriceMin: BigInt = BigInt(eventDataUintItemsItems[11]);
   let collateralTokenPriceMax: BigInt = BigInt(eventDataUintItemsItems[10]);

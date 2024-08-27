@@ -4,7 +4,6 @@ import { CollateralClaimedEventData } from "../utils/eventData/CollateralClaimed
 import { ClaimableCollateralUpdatedEventData } from "../utils/eventData/ClaimableCollateralUpdatedEventData";
 import { SetClaimableCollateralFactorForTimeEventData } from "../utils/eventData/SetClaimableCollateralFactorForTime";
 import { SetClaimableCollateralFactorForAccountEventData } from "../utils/eventData/SetClaimableCollateralFactorForAccount";
-import { neonDevnet } from "viem/chains";
 
 export async function handleCollateralClaimed(
   eventData: EventLog1Item,
@@ -141,7 +140,7 @@ export async function handleSetClaimableCollateralFactorForTime(
 
     context.ClaimableCollateral.set(claimable);
   }
-  
+
   context.ClaimableCollateralGroup.set(entity);
 }
 

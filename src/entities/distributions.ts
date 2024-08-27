@@ -20,19 +20,14 @@ export async function saveDistribution(
       tokens: new Array<string>(0),
       amounts: new Array<bigint>(0),
       amountsInUsd: new Array<bigint>(0),
-      receiver: receiver,
-      typeId: typeId,
-      transactionHash: txHash,
-      blockNumber: blockNumber,
-      timestamp: timestamp,
+      receiver: "",
+      typeId: 0,
+      transactionHash: "",
+      blockNumber: 0,
+      timestamp: 0,
     };
   }
-
-  // Debug
-  // context.log.debug(
-  //   `Tokens array: ${entity.tokens} \n Tokens array length: ${entity.tokens.length}`
-  // );
-
+  
   let tokens = entity.tokens;
   tokens.push(token);
 

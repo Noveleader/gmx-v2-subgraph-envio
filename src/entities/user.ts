@@ -1,32 +1,6 @@
 import { User, UserStat } from "generated/src/Types.gen";
 import { timestampToPeriodStart } from "../utils/time";
 
-export async function getOrCreateUserStat(
-  timestamp: number,
-  period: string,
-  context: any
-): Promise<UserStat> {
-  let timestampGroup = timestampToPeriodStart(timestamp, period);
-  let userId = period == "total" ? "total" : timestampGroup.toString();
-  let user: UserStat | undefined = await context.UserStat.get(userId);
-  if (user == undefined) {
-    let newUserStatEntity: UserStat = {
-      id: userId,
-      period: period,
-      totalPositionCount: 0,
-      totalSwapCount: 0,
-      totalDepositCount: 0,
-      totalWithdrawalCount: 0,
-      uniqueUsers: 0,
-      timestamp: timestampGroup,
-    };
-
-    return newUserStatEntity;
-  }
-
-  return user;
-}
-
 export async function saveUserStat(
   type: string,
   account: string,
@@ -38,8 +12,8 @@ export async function saveUserStat(
 
   let userData: User | undefined = await context.User.get(account);
 
-  if (userData == undefined) {
-    let newUserDataEntity: User = {
+  if (userData === undefined) {
+    userData = {
       id: account,
       totalSwapCount: 0,
       totalPositionCount: 0,
@@ -47,8 +21,6 @@ export async function saveUserStat(
       totalWithdrawalCount: 0,
       account: account,
     };
-
-    userData = newUserDataEntity;
 
     if (account) {
       totalUserStats = {
@@ -63,7 +35,7 @@ export async function saveUserStat(
     }
   }
 
-  if (type == "swap") {
+  if (type === "swap") {
     totalUserStats = {
       ...totalUserStats,
       totalSwapCount: totalUserStats.totalSwapCount + 1,
@@ -80,7 +52,7 @@ export async function saveUserStat(
     };
   }
 
-  if (type == "margin") {
+  if (type === "margin") {
     totalUserStats = {
       ...totalUserStats,
       totalPositionCount: totalUserStats.totalPositionCount + 1,
@@ -97,7 +69,7 @@ export async function saveUserStat(
     };
   }
 
-  if (type == "deposit") {
+  if (type === "deposit") {
     totalUserStats = {
       ...totalUserStats,
       totalDepositCount: totalUserStats.totalDepositCount + 1,
@@ -114,7 +86,7 @@ export async function saveUserStat(
     };
   }
 
-  if (type == "withdrawal") {
+  if (type === "withdrawal") {
     totalUserStats = {
       ...totalUserStats,
       totalWithdrawalCount: totalUserStats.totalWithdrawalCount + 1,
@@ -133,5 +105,30 @@ export async function saveUserStat(
 
   context.UserStat.set(totalUserStats);
   context.UserStat.set(dailyUserStats);
-  context.UserStat.set(userData);
+  context.User.set(userData);
+}
+
+async function getOrCreateUserStat(
+  timestamp: number,
+  period: string,
+  context: any
+): Promise<UserStat> {
+  let timestampGroup = timestampToPeriodStart(timestamp, period);
+  let userId = period === "total" ? "total" : timestampGroup.toString();
+  let user: UserStat | undefined = await context.UserStat.get(userId);
+
+  if (user === undefined) {
+    user = {
+      id: userId,
+      period: period,
+      totalPositionCount: 0,
+      totalSwapCount: 0,
+      totalDepositCount: 0,
+      totalWithdrawalCount: 0,
+      uniqueUsers: 0,
+      timestamp: timestampGroup,
+    };
+  }
+
+  return user as UserStat;
 }

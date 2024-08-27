@@ -24,12 +24,14 @@ export async function getMarketPoolValueFromContract(
   if (transaction.blockNumber < contractConfig.blockNumber) {
     return ZERO;
   }
-  
+
   const marketConfig = marketConfigs.get(marketAddress);
 
   if (!marketConfig) {
     context.log.error(
-      `Market Config not found for market address ${[marketAddress]}`
+      `Market Config not found for market address ${[
+        marketAddress,
+      ]} for chain ID: ${chainId}`
     );
     throw new Error("Market Config not found");
   }
@@ -58,9 +60,9 @@ export async function getMarketPoolValueFromContract(
       MAX_PNL_FACTOR_FOR_TRADERS,
       true,
     ],
-  })) as [BigInt, BigInt[]];
+  })) as any;
 
-  return tx[1][0];
+  return tx[1].poolValue;
 }
 
 async function getTokenPriceProps(

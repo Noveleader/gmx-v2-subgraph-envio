@@ -115,7 +115,7 @@ export async function saveOrderFrozenState(
 
   let key = eventDataBytes32ItemsItems[0];
 
-  let order = context.Order.get(key);
+  let order = await context.Order.get(key);
 
   if (order == null) {
     return null;
