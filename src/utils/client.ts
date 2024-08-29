@@ -11,6 +11,10 @@ export function getClient(chainId: number) {
 
   return createPublicClient({
     chain: chain,
-    transport: http(),
+    transport: http("", {
+      batch: {
+        batchSize: 2_000,
+      },
+    }),
   });
 }

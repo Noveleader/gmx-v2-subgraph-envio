@@ -478,6 +478,7 @@ export async function handlePositionImpactPoolDistributed(
   eventData: EventLog1Item,
   transaction: Transaction,
   chainId: number,
+  blockNumber: number,
   context: any
 ): Promise<void> {
   let data = new PositionImpactPoolDistributedEventData(eventData);
@@ -504,6 +505,7 @@ export async function handlePositionImpactPoolDistributed(
   let marketTokensSupply = await getMarketTokensSupplyFromContract(
     data.market,
     chainId,
+    blockNumber,
     context
   );
 

@@ -558,6 +558,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       ? await getMarketTokensSupplyFromContract(
           swapFeesInfo.marketAddress,
           event.chainId,
+          event.block.number,
           context
         )
       : (await getMarketInfo(swapFeesInfo.marketAddress, context))
@@ -745,6 +746,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       eventData,
       transaction,
       event.chainId,
+      event.block.number,
       context
     );
     return;
@@ -1012,7 +1014,7 @@ async function handleDepositExecuted(
   let depositUsd: BigInt =
     BigInt(longTokenAmount.toString()) * BigInt(longTokenPrice.toString()) +
     BigInt(shortTokenAmount.toString()) * BigInt(shortTokenPrice.toString());
-    
+
   await saveUserGlpGmMigrationStatGmData(
     depositRef.account,
     event.block.timestamp,

@@ -11,6 +11,7 @@ import { Address } from "viem";
 let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 let MAX_PNL_FACTOR_FOR_TRADERS: string =
   "0xab15365d3aa743e766355e2557c230d8f943e195dc84d9b2b05928a07b635ee1";
+let calls = 0;
 
 export async function getMarketPoolValueFromContract(
   marketAddress: string,
@@ -57,18 +58,29 @@ export async function getMarketPoolValueFromContract(
     true,
   ];
 
-  // context.log.debug(`Args are the following: ${args}`);
+  let poolValue: BigInt = ZERO;
 
-  let tx = (await client.readContract({
-    address: getReaderAddress(chainId) as Address,
-    abi: Reader.abi,
-    functionName: "getMarketTokenPrice",
-    args: args,
-  })) as any;
+  try {
+    let tx = (await client.readContract({
+      address: contractConfig.readerContractAddress as Address,
+      abi: Reader.abi,
+      functionName: "getMarketTokenPrice",
+      args: args,
+      blockNumber: BigInt(transaction.blockNumber),
+    })) as any;
 
-  // context.log.debug(`Pool Valuue is ${tx[1].poolValue}`);
+    poolValue = tx[1].poolValue;
 
-  return tx[1].poolValue;
+    context.log.info(
+      `Pool Value is ${poolValue} for the block ${transaction.blockNumber} for these market args: ${marketArg}`
+    );
+  } catch {
+    context.log.info(
+      `Pool Value doesn't exist at the block ${transaction.blockNumber} for these market args: ${marketArg}`
+    );
+  }
+
+  return poolValue;
 }
 
 async function getTokenPriceProps(

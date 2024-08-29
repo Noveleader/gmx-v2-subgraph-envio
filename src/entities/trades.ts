@@ -122,27 +122,41 @@ export async function savePositionIncreaseExecutedTradeAction(
 
   let tokenPrice = await context.TokenPrice.get(marketInfo.indexToken);
 
+  if (positionIncrease == undefined) {
+    throw new Error("PositionIncrease not found " + order.id);
+  }
+
+  let positionFeesInfo: PositionFeesInfo | undefined =
+    await context.PositionFeesInfo.get(
+      order.id + ":" + "PositionFeesCollected"
+    );
+
+  if (positionFeesInfo == undefined) {
+    context.log.warn(`PositionFeesInfo not found {} ${order.id}`);
+    throw new Error("PositionFeesInfo not found " + order.id);
+  }
+
   tradeAction = {
     ...tradeAction,
     indexTokenPriceMin: tokenPrice.minPrice,
     indexTokenPriceMax: tokenPrice.maxPrice,
   };
 
-  if (positionIncrease == undefined) {
-    throw new Error("PositionIncrease not found " + order.id);
-  }
-
   tradeAction = {
     ...tradeAction,
     eventName: "OrderExecuted",
     orderKey: order.id,
-    orderType: order.orderType,
-    initialCollateralDeltaAmount: positionIncrease.collateralDeltaAmount,
-    sizeDeltaUsd: positionIncrease.sizeDeltaUsd,
     executionPrice: positionIncrease.executionPrice,
     priceImpactUsd: positionIncrease.priceImpactUsd,
+
+    collateralTokenPriceMin: positionFeesInfo.collateralTokenPriceMin,
+    collateralTokenPriceMax: positionFeesInfo.collateralTokenPriceMax,
+
+    positionFeeAmount: positionFeesInfo.positionFeeAmount,
+    borrowingFeeAmount: positionFeesInfo.borrowingFeeAmount,
+    fundingFeeAmount: positionFeesInfo.fundingFeeAmount,
     transaction_id: transaction.id,
-    timestamp: tradeAction.timestamp,
+    timestamp: transaction.timestamp,
   };
 
   context.TradeAction.set(tradeAction);

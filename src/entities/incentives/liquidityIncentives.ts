@@ -447,7 +447,6 @@ export async function saveMarketIncentivesStat(
 
   let data = new MarketPoolValueUpdatedEventData(eventData);
 
-  let marketTokensSupply = data.marketTokensSupply;
   let marketAddress = data.market;
   let entity = await _getOrCreateMarketIncentivesStat(
     marketAddress,
@@ -460,11 +459,15 @@ export async function saveMarketIncentivesStat(
     // interpolate cumulative time * marketTokensBalance starting from the beginning of the period
 
     let marketInfo = await getMarketInfo(marketAddress, context);
+    let lastMarketTokensSupply =
+      marketInfo.marketTokensSupplyFromPoolUpdated == undefined
+        ? marketInfo.marketTokensSupply
+        : marketInfo.marketTokensSupplyFromPoolUpdated;
     let timeInSeconds = event.block.timestamp - entity.timestamp;
     entity = {
       ...entity,
       cumulativeTimeByMarketTokensSupply:
-        marketInfo.marketTokensSupply * BigInt(timeInSeconds),
+        lastMarketTokensSupply * BigInt(timeInSeconds),
     };
   } else {
     let timeInSeconds = event.block.timestamp - entity.updatedTimestamp;
@@ -478,7 +481,7 @@ export async function saveMarketIncentivesStat(
 
   entity = {
     ...entity,
-    lastMarketTokensSupply: BigInt(marketTokensSupply.toString()),
+    lastMarketTokensSupply: BigInt(data.marketTokensSupply.toString()),
     updatedTimestamp: event.block.timestamp,
   };
 
