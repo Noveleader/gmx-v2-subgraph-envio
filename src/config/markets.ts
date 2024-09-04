@@ -248,8 +248,6 @@ marketConfigs.set(
   )
 );
 
-// TODO: The pools with same index, long, short token and that too stable coin is a synthetic asset pool like the following pool is for SOL-USDC on AVAX
-
 marketConfigs.set(
   "0xd2eFd1eA687CD78c41ac262B3Bc9B53889ff1F70",
   createMarketConfig(
@@ -289,6 +287,7 @@ marketConfigs.set(
     "0x7b7c6c49fa99b37270077fbfa398748c27046984"
   )
 );
+
 marketConfigs.set(
   "0x339ef6aacf8f4b2ad15bdcecbeed1842ec4dbcbf",
   createMarketConfig(

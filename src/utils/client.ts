@@ -1,20 +1,20 @@
-import { Chain, createPublicClient, http } from "viem";
+import { Chain, createPublicClient, webSocket } from "viem";
 import { arbitrum, avalanche } from "viem/chains";
+import * as dotenv from "dotenv";
+dotenv.config();
 
 export function getClient(chainId: number) {
   let chain: Chain = arbitrum;
-  if (chainId == 42161) {
-    chain = arbitrum;
-  } else if (chainId == 43114) {
+  if (chainId == 43114) {
     chain = avalanche;
+    return createPublicClient({
+      chain: chain,
+      transport: webSocket(process.env.WSS_AVAX),
+    });
   }
 
   return createPublicClient({
     chain: chain,
-    transport: http("", {
-      batch: {
-        batchSize: 2_000,
-      },
-    }),
+    transport: webSocket(process.env.WSS_ARB),
   });
 }

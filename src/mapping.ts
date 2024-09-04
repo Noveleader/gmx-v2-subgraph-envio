@@ -260,7 +260,7 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
   }
 
   if (to == ADDRESS_ZERO) {
-    saveMarketInfoTokensSupply(marketAddress, value * BigInt(-1), context);
+    await saveMarketInfoTokensSupply(marketAddress, value * BigInt(-1), context);
   }
 });
 

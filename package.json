@@ -15,6 +15,7 @@
     "@types/chai": "^4.3.11",
     "@types/mocha": "10.0.6",
     "@types/node": "20.8.8",
+    "@types/pg": "^8.11.8",
     "mocha": "10.2.0",
     "ts-mocha": "^10.0.0",
     "ts-node": "10.9.1",
@@ -22,8 +23,10 @@
   },
   "dependencies": {
     "chai": "4.3.10",
+    "dotenv": "16.4.5",
     "envio": "^2.1.2",
     "ethers": "6.8.0",
+    "pg": "^8.12.0",
     "viem": "1.16.6"
   },
   "optionalDependencies": {

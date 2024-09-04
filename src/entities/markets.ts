@@ -62,15 +62,17 @@ export async function saveMarketInfo(
   let longToken = eventDataAddressItemsItems[2];
   let shortToken = eventDataAddressItemsItems[3];
 
-  context.MarketInfo.set({
+  let marketInfo: MarketInfo = {
     id: id,
     marketToken: id,
     indexToken: indexToken,
     longToken: longToken,
     shortToken: shortToken,
     marketTokensSupply: ZERO,
-  });
+    marketTokensSupplyFromPoolUpdated: ZERO,
+  };
 
-  let marketInfo: MarketInfo = await context.MarketInfo.get(id);
+  context.MarketInfo.set(marketInfo);
+
   return marketInfo as MarketInfo;
 }
