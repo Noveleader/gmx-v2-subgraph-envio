@@ -6,8 +6,7 @@ import { getClient } from "../utils/client";
 import Reader from "../../abis/Reader.json";
 import { ZERO } from "../utils/number";
 import { Address, GetBlockNumberErrorType } from "viem";
-import pg from "pg";
-import { getPostgresClient } from "../utils/postgresClient";
+import { PoolValueCache } from "../utils/cache";
 
 let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 let MAX_PNL_FACTOR_FOR_TRADERS: string =
@@ -19,7 +18,15 @@ export async function getMarketPoolValueFromContract(
   transaction: Transaction,
   context: any
 ): Promise<BigInt> {
-  const postgresClient = await getPostgresClient(context);
+  const id = `${marketAddress}:${transaction.blockNumber}:poolValue`;
+  const poolValueCache = await PoolValueCache.init();
+  const poolValueCached = await poolValueCache.read(id);
+
+  if (poolValueCached) {
+    context.log.info(`Returning Data from cache for key: ${id}`);
+    return BigInt(poolValueCached);
+  }
+
   let network = getNetworkFromChainId(chainId);
   let contractConfig = getReaderContractConfigByNetwork(network, context);
 
@@ -36,16 +43,6 @@ export async function getMarketPoolValueFromContract(
       ]} for chain ID: ${chainId}`
     );
     throw new Error("Market Config not found");
-  }
-
-  const cacheKey = `${marketAddress}:${transaction.blockNumber}:poolValue`;
-
-  let cachedValue = await getCachedPoolValue(cacheKey, postgresClient);
-  if (cachedValue !== null) {
-    context.log.info(
-      `Cache hit for key: ${cacheKey}, returning the pool value ${cachedValue}`
-    );
-    return cachedValue;
   }
 
   const client = getClient(chainId);
@@ -86,7 +83,7 @@ export async function getMarketPoolValueFromContract(
       `Pool Value is ${poolValue} for the block ${transaction.blockNumber} for these market args: ${marketArg}`
     );
 
-    await setCachedPoolValue(cacheKey, poolValue, postgresClient);
+    await poolValueCache.add(id, poolValue.toString());
   } catch (e) {
     const error = e as GetBlockNumberErrorType;
     context.log.warn(
@@ -98,33 +95,6 @@ export async function getMarketPoolValueFromContract(
   }
 
   return poolValue;
-}
-
-async function getCachedPoolValue(
-  key: string,
-  postgresClient: pg.Client
-): Promise<BigInt | null> {
-  const res = await postgresClient.query(
-    "SELECT value FROM pool_value_cache WHERE key = $1",
-    [key]
-  );
-
-  if (res.rows.length > 0) {
-    return BigInt(res.rows[0].value);
-  }
-
-  return null;
-}
-
-async function setCachedPoolValue(
-  key: string,
-  value: BigInt,
-  postgresClient: pg.Client
-) {
-  await postgresClient.query(
-    "INSERT INTO pool_value_cache(key, value) VALUES($1, $2) ON CONFLICT (key) DO NOTHING",
-    [key, value.toString()]
-  );
 }
 
 async function getTokenPriceProps(
