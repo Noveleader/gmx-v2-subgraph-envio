@@ -4,6 +4,7 @@ import { EventLog1Item } from "../interfaces/interface";
 export function savePositionIncrease(
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): PositionIncrease {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -53,6 +54,7 @@ export function savePositionIncrease(
 
   let entity: PositionIncrease = {
     id: orderKey,
+    chainId: chainId,
     orderKey: orderKey,
     positionKey: positionKey,
     account: account,
@@ -91,6 +93,7 @@ export function savePositionIncrease(
 export function savePositionDecrease(
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): PositionDecrease {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -134,6 +137,7 @@ export function savePositionDecrease(
 
   let entity: PositionDecrease = {
     id: orderKey,
+    chainId: chainId,
     orderKey: orderKey,
     positionKey: positionKey,
     account: account,

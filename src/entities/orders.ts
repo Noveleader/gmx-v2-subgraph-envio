@@ -188,6 +188,7 @@ export async function saveOrderCollateralAutoUpdate(
 export function saveOrder(
   eventData: EventLog2Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Order {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -227,7 +228,7 @@ export function saveOrder(
 
   let order: Order = {
     id: key,
-
+    chainId: chainId,
     account: account,
     receiver: receiver,
     callbackContract: callbackContract,

@@ -5,6 +5,7 @@ import { EventLog1Item } from "../interfaces/interface";
 
 export async function getMarketInfo(
   marketAddress: string,
+  chainId: number,
   context: any
 ): Promise<MarketInfo> {
   let entity: MarketInfo | undefined = await context.MarketInfo.get(
@@ -17,6 +18,7 @@ export async function getMarketInfo(
     if (marketConfig) {
       entity = {
         id: marketAddress,
+        chainId: chainId,
         marketToken: marketConfig.marketToken,
         indexToken: marketConfig.indexToken,
         longToken: marketConfig.longToken,
@@ -39,9 +41,10 @@ export async function getMarketInfo(
 export async function saveMarketInfoTokensSupply(
   marketAddress: string,
   value: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
-  let marketInfo = await getMarketInfo(marketAddress, context);
+  let marketInfo = await getMarketInfo(marketAddress, chainId, context);
 
   marketInfo = {
     ...marketInfo,
@@ -54,6 +57,7 @@ export async function saveMarketInfoTokensSupply(
 
 export async function saveMarketInfo(
   eventData: EventLog1Item,
+  chainId: number,
   context: any
 ): Promise<any> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
@@ -64,6 +68,7 @@ export async function saveMarketInfo(
 
   let marketInfo: MarketInfo = {
     id: id,
+    chainId: chainId,
     marketToken: id,
     indexToken: indexToken,
     longToken: longToken,

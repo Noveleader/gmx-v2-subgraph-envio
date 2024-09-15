@@ -8,6 +8,7 @@ async function getOrCreateSwapVolumeInfo(
   tokenIn: string,
   tokenOut: string,
   period: string,
+  chainId: number,
   context: any
 ): Promise<SwapVolumeInfo> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
@@ -23,6 +24,7 @@ async function getOrCreateSwapVolumeInfo(
   if (volumeInfo == undefined) {
     volumeInfo = {
       id: id,
+      chainId: chainId,
       tokenIn: tokenIn,
       tokenOut: tokenOut,
       timestamp: timestampGroup,
@@ -38,6 +40,7 @@ export async function saveSwapVolumeInfo(
   tokenIn: string,
   tokenOut: string,
   volumeUsd: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   let hourlyVolumeInfo = await getOrCreateSwapVolumeInfo(
@@ -45,6 +48,7 @@ export async function saveSwapVolumeInfo(
     tokenIn,
     tokenOut,
     "1h",
+    chainId,
     context
   );
 
@@ -53,6 +57,7 @@ export async function saveSwapVolumeInfo(
     tokenIn,
     tokenOut,
     "1d",
+    chainId,
     context
   );
 
@@ -61,6 +66,7 @@ export async function saveSwapVolumeInfo(
     tokenIn,
     tokenOut,
     "total",
+    chainId,
     context
   );
 
@@ -88,13 +94,25 @@ export async function saveVolumeInfo(
   type: string,
   timestamp: number,
   volume: BigInt,
+  chainId: number,
   context: any
 ) {
-  let hourlyVolumeInfo = await getOrCreateVolumeInfo(timestamp, "1h", context);
-  let dailyVolumeInfo = await getOrCreateVolumeInfo(timestamp, "1d", context);
+  let hourlyVolumeInfo = await getOrCreateVolumeInfo(
+    timestamp,
+    "1h",
+    chainId,
+    context
+  );
+  let dailyVolumeInfo = await getOrCreateVolumeInfo(
+    timestamp,
+    "1d",
+    chainId,
+    context
+  );
   let totalVolumeInfo = await getOrCreateVolumeInfo(
     timestamp,
     "total",
+    chainId,
     context
   );
 
@@ -211,14 +229,16 @@ export async function savePositionVolumeInfo(
   collateralToken: string,
   marketToken: string,
   sizeInUsd: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
-  let marketInfo = await getMarketInfo(marketToken, context);
+  let marketInfo = await getMarketInfo(marketToken, chainId, context);
   let hourlyVolumeInfo = await getOrCreatePositionVolumeInfo(
     timestamp,
     collateralToken,
     marketInfo.indexToken,
     "1h",
+    chainId,
     context
   );
 
@@ -227,6 +247,7 @@ export async function savePositionVolumeInfo(
     collateralToken,
     marketInfo.indexToken,
     "1d",
+    chainId,
     context
   );
 
@@ -235,6 +256,7 @@ export async function savePositionVolumeInfo(
     collateralToken,
     marketInfo.indexToken,
     "total",
+    chainId,
     context
   );
 
@@ -263,6 +285,7 @@ async function getOrCreatePositionVolumeInfo(
   collateralToken: string,
   indexToken: string,
   period: string,
+  chainId: number,
   context: any
 ): Promise<PositionVolumeInfo> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
@@ -282,6 +305,7 @@ async function getOrCreatePositionVolumeInfo(
   if (volumeInfo === undefined) {
     volumeInfo = {
       id: id,
+      chainId: chainId,
       collateralToken: collateralToken,
       indexToken: indexToken,
       timestamp: timestampGroup,
@@ -296,6 +320,7 @@ async function getOrCreatePositionVolumeInfo(
 async function getOrCreateVolumeInfo(
   timestamp: number,
   period: string,
+  chainId: number,
   context: any
 ): Promise<VolumeInfo> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
@@ -309,6 +334,7 @@ async function getOrCreateVolumeInfo(
   if (volumeInfo == undefined) {
     volumeInfo = {
       id: volumeId,
+      chainId: chainId,
       period: period,
       volumeUsd: ZERO,
       swapVolumeUsd: ZERO,

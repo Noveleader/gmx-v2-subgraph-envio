@@ -5,16 +5,28 @@ export async function saveUserStat(
   type: string,
   account: string,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<void> {
-  let totalUserStats = await getOrCreateUserStat(timestamp, "total", context);
-  let dailyUserStats = await getOrCreateUserStat(timestamp, "1d", context);
+  let totalUserStats = await getOrCreateUserStat(
+    timestamp,
+    "total",
+    chainId,
+    context
+  );
+  let dailyUserStats = await getOrCreateUserStat(
+    timestamp,
+    "1d",
+    chainId,
+    context
+  );
 
   let userData: User | undefined = await context.User.get(account);
 
   if (userData === undefined) {
     userData = {
       id: account,
+      chainId: chainId,
       totalSwapCount: 0,
       totalPositionCount: 0,
       totalDepositCount: 0,
@@ -111,6 +123,7 @@ export async function saveUserStat(
 async function getOrCreateUserStat(
   timestamp: number,
   period: string,
+  chainId: number,
   context: any
 ): Promise<UserStat> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
@@ -120,6 +133,7 @@ async function getOrCreateUserStat(
   if (user === undefined) {
     user = {
       id: userId,
+      chainId: chainId,
       period: period,
       totalPositionCount: 0,
       totalSwapCount: 0,

@@ -104,6 +104,7 @@ let SELL_USDG_ID = "last";
 Vault_SellUSDG_handler(async ({ event, context }) => {
   let sellUsdgEntity: SellUSDG = {
     id: SELL_USDG_ID,
+    chainId: event.chainId,
     txHash: event.transaction.hash.toString(),
     logIndex: event.logIndex,
     feeBasisPoints: event.params.feeBasisPoints,
@@ -151,6 +152,7 @@ GlpManager_RemoveLiquidity_handler(async ({ event, context }) => {
     Number(event.block.timestamp),
     event.params.usdgAmount,
     sellUsdgEntity.feeBasisPoints,
+    event.chainId,
     context
   );
 });
@@ -168,9 +170,10 @@ BatchSender_BatchSend_handler(async ({ event, context }) => {
       token,
       amounts[i],
       Number(typeId),
-      event.transaction.hash.toString(),
-      Number(event.block.number),
-      Number(event.block.timestamp),
+      event.transaction.hash,
+      event.block.number,
+      event.block.timestamp,
+      event.chainId,
       context
     );
   }
@@ -189,9 +192,10 @@ BatchSenderNew_BatchSend_handler(async ({ event, context }) => {
       token,
       amounts[i],
       Number(typeId),
-      event.transaction.hash.toString(),
-      Number(event.block.number),
-      Number(event.block.timestamp),
+      event.transaction.hash,
+      event.block.number,
+      event.block.timestamp,
+      event.chainId,
       context
     );
   }
@@ -212,12 +216,23 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       "1w",
       value * BigInt(-1),
       event.block.timestamp,
+      event.chainId,
       context
     );
 
-    await saveUserMarketInfo(from, marketAddress, value * BigInt(-1), context);
+    await saveUserMarketInfo(
+      from,
+      marketAddress,
+      value * BigInt(-1),
+      event.chainId,
+      context
+    );
 
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
 
     await saveUserGmTokensBalanceChange(
       to,
@@ -225,6 +240,7 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       value,
       transaction,
       BigInt(event.logIndex),
+      event.chainId,
       context
     );
   }
@@ -238,12 +254,17 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       "1w",
       value,
       event.block.timestamp,
+      event.chainId,
       context
     );
 
-    await saveUserMarketInfo(to, marketAddress, value, context);
+    await saveUserMarketInfo(to, marketAddress, value, event.chainId, context);
 
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
 
     await saveUserGmTokensBalanceChange(
       to,
@@ -251,16 +272,27 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       value,
       transaction,
       BigInt(event.logIndex),
+      event.chainId,
       context
     );
   }
 
   if (from == ADDRESS_ZERO) {
-    await saveMarketInfoTokensSupply(marketAddress, value, context);
+    await saveMarketInfoTokensSupply(
+      marketAddress,
+      value,
+      event.chainId,
+      context
+    );
   }
 
   if (to == ADDRESS_ZERO) {
-    await saveMarketInfoTokensSupply(marketAddress, value * BigInt(-1), context);
+    await saveMarketInfoTokensSupply(
+      marketAddress,
+      value * BigInt(-1),
+      event.chainId,
+      context
+    );
   }
 });
 
@@ -319,7 +351,7 @@ EventEmitter_EventLog_handler(async ({ event, context }) => {
   };
 
   if (eventName == "DepositExecuted") {
-    await handleDepositExecuted(event, eventData, context);
+    await handleDepositExecuted(event, eventData, event.chainId, context);
   }
 });
 
@@ -380,7 +412,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   let eventId = getIdFromEvent(event);
 
   if (eventName == "MarketCreated") {
-    await saveMarketInfo(eventData, context);
+    await saveMarketInfo(eventData, event.chainId, context);
     // MarketTokenTemplate_Transfer_contractRegister(({ event, context }) => {
     //   context.addMarketTokenTemplate(eventData.eventData_addressItems_items[0]);
     // });
@@ -393,14 +425,28 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "WithdrawalCreated") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let account = eventData.eventData_addressItems_items[0];
 
-    await saveUserStat("withdrawal", account, transaction.timestamp, context);
+    await saveUserStat(
+      "withdrawal",
+      account,
+      transaction.timestamp,
+      event.chainId,
+      context
+    );
   }
 
   if (eventName == "OrderExecuted") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderExecutedState(eventData, transaction, context);
 
     if (order == null) {
@@ -415,6 +461,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     } else if (
@@ -425,6 +472,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     } else if (
@@ -437,6 +485,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     }
@@ -444,7 +493,11 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderCancelled") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderCancelledState(eventData, transaction, context);
     if (order !== null) {
       await saveOrderCancelledTradeAction(
@@ -453,6 +506,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
         order.cancelledReason as string,
         order.cancelledReasonBytes as string,
         transaction,
+        event.chainId,
         context
       );
     }
@@ -461,7 +515,11 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderUpdated") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderUpdate(eventData, context);
 
     if (order !== null) {
@@ -469,6 +527,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     }
@@ -477,7 +536,11 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderFrozen") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderFrozenState(eventData, context);
 
     if (order == null) {
@@ -490,6 +553,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       order.frozenReason as string,
       order.frozenReasonBytes as string,
       transaction,
+      event.chainId,
       context
     );
 
@@ -507,7 +571,11 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "SwapInfo") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let tokenIn = eventData.eventData_addressItems_items[2];
     let tokenOut = eventData.eventData_addressItems_items[3];
 
@@ -518,24 +586,36 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
     let receiver = eventData.eventData_addressItems_items[1];
 
-    await saveSwapInfo(eventData, transaction, context);
+    await saveSwapInfo(eventData, transaction, event.chainId, context);
     await saveSwapVolumeInfo(
       transaction.timestamp,
       tokenIn,
       tokenOut,
       volumeUsd,
+      event.chainId,
       context
     );
-    await saveUserStat("swap", receiver, transaction.timestamp, context);
+    await saveUserStat(
+      "swap",
+      receiver,
+      transaction.timestamp,
+      event.chainId,
+      context
+    );
     return;
   }
 
   if (eventName == "SwapFeesCollected") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let swapFeesInfo = await saveSwapFeesInfo(
       eventData,
       eventId,
       transaction,
+      event.chainId,
       context
     );
     let tokenPrice = BigInt(eventData.eventData_uintItems_items[0]);
@@ -561,8 +641,13 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
           event.block.number,
           context
         )
-      : (await getMarketInfo(swapFeesInfo.marketAddress, context))
-          .marketTokensSupply;
+      : (
+          await getMarketInfo(
+            swapFeesInfo.marketAddress,
+            event.chainId,
+            context
+          )
+        ).marketTokensSupply;
 
     await saveCollectedMarketFees(
       transaction,
@@ -570,15 +655,23 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       poolValue,
       swapFeesInfo.feeUsdForPool,
       marketTokensSupply,
+      event.chainId,
       context
     );
 
-    await saveVolumeInfo(action, transaction.timestamp, volumeUsd, context);
+    await saveVolumeInfo(
+      action,
+      transaction.timestamp,
+      volumeUsd,
+      event.chainId,
+      context
+    );
     await saveSwapFeesInfoWithPeriod(
       feeAmountForPool,
       feeReceiverAmount,
       tokenPrice,
       transaction.timestamp,
+      event.chainId,
       context
     );
 
@@ -586,11 +679,16 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "PositionFeesInfo") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     await savePositionFeesInfo(
       eventData,
       "PositionFeesInfo",
       transaction,
+      event.chainId,
       context
     );
 
@@ -599,7 +697,11 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
   if (eventName == "PositionFeesCollected") {
     let eventDataUintItemsItems = eventData.eventData_uintItems_items;
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let positionFeeAmount = BigInt(eventDataUintItemsItems[24]);
     let positionFeeAmountForPool = BigInt(eventDataUintItemsItems[23]);
     let collateralTokenPriceMin = BigInt(eventDataUintItemsItems[0]);
@@ -608,6 +710,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       eventData,
       eventName,
       transaction,
+      event.chainId,
       context
     );
 
@@ -620,6 +723,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
 
     let marketInfo = await getMarketInfo(
       positionFeesInfo.marketAddress,
+      event.chainId,
       context
     );
 
@@ -629,6 +733,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       poolValue,
       positionFeesInfo.feeUsdForPool,
       marketInfo.marketTokensSupply,
+      event.chainId,
       context
     );
 
@@ -638,6 +743,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       borrowingFeeUsd,
       collateralTokenPriceMin,
       transaction.timestamp,
+      event.chainId,
       context
     );
 
@@ -646,6 +752,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       event.block.timestamp,
       positionFeeAmount,
       collateralTokenPriceMin,
+      event.chainId,
       context
     );
 
@@ -653,17 +760,22 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "PositionIncrease") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let collateralToken = eventData.eventData_addressItems_items[2];
     let marketToken = eventData.eventData_addressItems_items[1];
     let sizeDeltaUsd = eventData.eventData_uintItems_items[12];
     let account = eventData.eventData_addressItems_items[0];
 
-    savePositionIncrease(eventData, transaction, context);
+    savePositionIncrease(eventData, transaction, event.chainId, context);
     await saveVolumeInfo(
       "margin",
       transaction.timestamp,
       BigInt(sizeDeltaUsd),
+      event.chainId,
       context
     );
     await savePositionVolumeInfo(
@@ -671,25 +783,37 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       collateralToken,
       marketToken,
       BigInt(sizeDeltaUsd),
+      event.chainId,
       context
     );
-    await saveUserStat("margin", account, transaction.timestamp, context);
+    await saveUserStat(
+      "margin",
+      account,
+      transaction.timestamp,
+      event.chainId,
+      context
+    );
 
     return;
   }
 
   if (eventName == "PositionDecrease") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let collateralToken = eventData.eventData_addressItems_items[2];
     let marketToken = eventData.eventData_addressItems_items[1];
     let sizeDeltaUsd = eventData.eventData_uintItems_items[12];
     let account = eventData.eventData_addressItems_items[0];
 
-    savePositionDecrease(eventData, transaction, context);
+    savePositionDecrease(eventData, transaction, event.chainId, context);
     await saveVolumeInfo(
       "margin",
       transaction.timestamp,
       BigInt(sizeDeltaUsd),
+      event.chainId,
       context
     );
 
@@ -698,50 +822,80 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
       collateralToken,
       marketToken,
       BigInt(sizeDeltaUsd),
+      event.chainId,
       context
     );
 
-    await saveUserStat("margin", account, transaction.timestamp, context);
+    await saveUserStat(
+      "margin",
+      account,
+      transaction.timestamp,
+      event.chainId,
+      context
+    );
     return;
   }
 
   if (eventName == "FundingFeesClaimed") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     await handleCollateralClaimAction(
       "ClaimFunding",
       eventData,
       transaction,
+      event.chainId,
       context
     );
     return;
   }
 
   if (eventName == "CollateralClaimed") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     await handleCollateralClaimAction(
       "ClaimPriceImpact",
       eventData,
       transaction,
+      event.chainId,
       context
     );
 
-    await handleCollateralClaimed(eventData, context);
+    await handleCollateralClaimed(eventData, event.chainId, context);
   }
 
   if (eventName == "ClaimableFundingUpdated") {
-    let transaction = await getOrCreateTransaction(event, context);
-    await handleClaimableFundingUpdated(eventData, transaction, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
+    await handleClaimableFundingUpdated(
+      eventData,
+      transaction,
+      event.chainId,
+      context
+    );
     return;
   }
 
   if (eventName == "MarketPoolValueUpdated") {
     // `saveMarketIncentivesStat should be called before `MarketPoolInfo` entity is updated
-    await saveMarketIncentivesStat(eventData, event, context);
+    await saveMarketIncentivesStat(eventData, event, event.chainId, context);
     return;
   }
 
   if (eventName == "PositionImpactPoolDistributed") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     await handlePositionImpactPoolDistributed(
       eventData,
       transaction,
@@ -753,12 +907,12 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OraclePriceUpdate") {
-    await handleOraclePriceUpdate(eventData, context);
+    await handleOraclePriceUpdate(eventData, event.chainId, context);
     return;
   }
 
   if (eventName == "ClaimableCollateralUpdated") {
-    await handleClaimableCollateralUpdated(eventData, context);
+    await handleClaimableCollateralUpdated(eventData, event.chainId, context);
     return;
   }
 });
@@ -821,23 +975,46 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
   let eventId = getIdFromEvent(event);
 
   if (eventName == "OrderCreated") {
-    let transaction = await getOrCreateTransaction(event, context);
-    let order = saveOrder(eventData, transaction, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
+    let order = saveOrder(eventData, transaction, event.chainId, context);
     if (isFundingFeeSettleOrder(order)) {
-      await saveClaimActionOnOrderCreated(transaction, eventData, context);
+      await saveClaimActionOnOrderCreated(
+        transaction,
+        eventData,
+        event.chainId,
+        context
+      );
     } else {
-      saveOrderCreatedTradeAction(eventId, order, transaction, context);
+      saveOrderCreatedTradeAction(
+        eventId,
+        order,
+        transaction,
+        event.chainId,
+        context
+      );
     }
     return;
   }
 
   if (eventName == "SetClaimableCollateralFactorForTime") {
-    await handleSetClaimableCollateralFactorForTime(eventData, context);
+    await handleSetClaimableCollateralFactorForTime(
+      eventData,
+      event.chainId,
+      context
+    );
     return;
   }
 
   if (eventName == "SetClaimableCollateralFactorForAccount") {
-    await handleSetClaimableCollateralFactorForAccount(eventData, context);
+    await handleSetClaimableCollateralFactorForAccount(
+      eventData,
+      event.chainId,
+      context
+    );
     return;
   }
 
@@ -847,19 +1024,33 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
   }
 
   if (eventName == "DepositExecuted") {
-    await handleDepositExecuted(event, eventData, context);
+    await handleDepositExecuted(event, eventData, event.chainId, context);
     return;
   }
 
   if (eventName == "WithdrawalCreated") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let account = eventData.eventData_addressItems_items[0];
-    await saveUserStat("withdrawal", account, transaction.timestamp, context);
+    await saveUserStat(
+      "withdrawal",
+      account,
+      transaction.timestamp,
+      event.chainId,
+      context
+    );
     return;
   }
 
   if (eventName == "OrderExecuted") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderExecutedState(eventData, transaction, context);
 
     if (order == undefined) {
@@ -874,6 +1065,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     } else if (
@@ -884,6 +1076,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     } else if (
@@ -894,12 +1087,18 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
     ) {
       let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
       if (claimRef != undefined) {
-        await saveClaimActionOnOrderCreated(transaction, eventData, context);
+        await saveClaimActionOnOrderCreated(
+          transaction,
+          eventData,
+          event.chainId,
+          context
+        );
       } else {
         await savePositionDecreaseExecutedTradeAction(
           eventId,
           order as Order,
           transaction,
+          event.chainId,
           context
         );
       }
@@ -908,14 +1107,23 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderCancelled") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderCancelledState(eventData, transaction, context);
 
     if (order != null) {
       let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
 
       if (claimRef != undefined) {
-        await saveClaimActionOnOrderCreated(transaction, eventData, context);
+        await saveClaimActionOnOrderCreated(
+          transaction,
+          eventData,
+          event.chainId,
+          context
+        );
       } else {
         await saveOrderCancelledTradeAction(
           eventId,
@@ -923,6 +1131,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
           order.cancelledReason as string,
           order.cancelledReasonBytes as string,
           transaction,
+          event.chainId,
           context
         );
       }
@@ -931,7 +1140,11 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderUpdated") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderUpdate(eventData, context);
 
     if (order !== null) {
@@ -939,6 +1152,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
         eventId,
         order as Order,
         transaction,
+        event.chainId,
         context
       );
     }
@@ -946,7 +1160,11 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
   }
 
   if (eventName == "OrderFrozen") {
-    let transaction = await getOrCreateTransaction(event, context);
+    let transaction = await getOrCreateTransaction(
+      event,
+      event.chainId,
+      context
+    );
     let order = await saveOrderFrozenState(eventData, context);
 
     if (order == null) {
@@ -959,6 +1177,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
       order.frozenReason as string,
       order.frozenReasonBytes as string,
       transaction,
+      event.chainId,
       context
     );
 
@@ -971,12 +1190,19 @@ async function handleDepositCreated(
   eventData: EventLog1Item | EventLog2Item,
   context: any
 ): Promise<void> {
-  let transaction = await getOrCreateTransaction(event, context);
+  let transaction = await getOrCreateTransaction(event, event.chainId, context);
   let account = eventData.eventData_addressItems_items[0];
-  await saveUserStat("deposit", account, transaction.timestamp, context);
+  await saveUserStat(
+    "deposit",
+    account,
+    transaction.timestamp,
+    event.chainId,
+    context
+  );
 
   let depositRef: DepositRef = {
     id: eventData.eventData_bytes32Items_items[0],
+    chainId: event.chainId,
     marketAddress: eventData.eventData_addressItems_items[3],
     account: eventData.eventData_addressItems_items[0],
   };
@@ -987,6 +1213,7 @@ async function handleDepositCreated(
 async function handleDepositExecuted(
   event: any,
   eventData: EventLogItem | EventLog2Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -1019,6 +1246,7 @@ async function handleDepositExecuted(
     depositRef.account,
     event.block.timestamp,
     depositUsd,
+    chainId,
     context
   );
 }

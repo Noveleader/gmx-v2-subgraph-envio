@@ -62,6 +62,7 @@ export async function saveTradingIncentivesStat(
   timestamp: number,
   feesAmount: BigInt,
   collateralTokenPrice: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (!_incentivesActive(timestamp)) {
@@ -81,6 +82,7 @@ export async function saveTradingIncentivesStat(
 
   let globalEntity = await _getOrCreateTradingIncentivesStat(
     timestamp,
+    chainId,
     context
   );
 
@@ -113,6 +115,7 @@ export async function saveTradingIncentivesStat(
   let userEntity = await _getOrCreateUserTradingIncentivesStat(
     account,
     timestamp,
+    chainId,
     context
   );
 
@@ -139,6 +142,7 @@ export async function saveTradingIncentivesStat(
 async function _getOrCreateUserTradingIncentivesStat(
   account: string,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<UserTradingIncentivesStat> {
   let period = "1w";
@@ -149,6 +153,7 @@ async function _getOrCreateUserTradingIncentivesStat(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       period: period,
       timestamp: startTimestamp,
       account: account,
@@ -165,6 +170,7 @@ async function _getOrCreateUserTradingIncentivesStat(
 
 async function _getOrCreateTradingIncentivesStat(
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<TradingIncentivesStat> {
   let period = "1w";
@@ -175,6 +181,7 @@ async function _getOrCreateTradingIncentivesStat(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       period: period,
       timestamp: startTimestamp,
       positionFeesUsd: ZERO,

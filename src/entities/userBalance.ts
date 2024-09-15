@@ -1,7 +1,6 @@
 import {
   UserGmTokensBalanceChange,
   Transaction,
-  User,
   LatestUserGmTokensBalanceChangeRef,
 } from "generated/src/Types.gen";
 import { ONE, ZERO } from "../utils/number";
@@ -13,6 +12,7 @@ export async function saveUserGmTokensBalanceChange(
   value: BigInt,
   transaction: Transaction,
   transactionLogIndex: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   let prevEntity = await getLatestUserGmTokensBalanceChange(
@@ -28,16 +28,18 @@ export async function saveUserGmTokensBalanceChange(
     transaction,
     transactionLogIndex,
     isDeposit ? "in" : "out",
+    chainId,
     context
   );
 
   let totalFees = await context.CollectedMarketFeesInfo.get(
     marketAddress + ":total"
   );
+
   let prevBalance = prevEntity ? prevEntity.tokensBalance : ZERO;
   let prevCumulativeIncome = prevEntity ? prevEntity.cumulativeIncome : ZERO;
 
-  let income = await calcIncomeForEntity(prevEntity, isDeposit);
+  let income = await calcIncomeForEntity(prevEntity, chainId, isDeposit);
 
   entity = {
     ...entity,
@@ -57,7 +59,7 @@ export async function saveUserGmTokensBalanceChange(
 
   context.UserGmTokensBalanceChange.set(entity);
 
-  await saveLatestUserGmTokensBalanceChange(entity, context);
+  await saveLatestUserGmTokensBalanceChange(entity, chainId, context);
 }
 
 async function getLatestUserGmTokensBalanceChange(
@@ -95,6 +97,7 @@ async function _createUserGmTokensBalanceChange(
   transaction: Transaction,
   transactionLogIndex: BigInt,
   postfix: string,
+  chainId: number,
   context: any
 ): Promise<UserGmTokensBalanceChange> {
   let id =
@@ -118,6 +121,7 @@ async function _createUserGmTokensBalanceChange(
 
   let newEntity: UserGmTokensBalanceChange = {
     id: id,
+    chainId: chainId,
     account: account,
     marketAddress: marketAddress,
     index: ZERO,
@@ -132,6 +136,7 @@ async function _createUserGmTokensBalanceChange(
 
 async function calcIncomeForEntity(
   entity: UserGmTokensBalanceChange | null,
+  chainId: number,
   isDeposit: boolean
 ): Promise<BigInt> {
   if (!entity) return ZERO;
@@ -141,6 +146,7 @@ async function calcIncomeForEntity(
     entity.marketAddress,
     0,
     "total",
+    chainId,
     context
   );
   let latestCumulativeFeePerGm = isDeposit
@@ -154,6 +160,7 @@ async function calcIncomeForEntity(
 
 async function saveLatestUserGmTokensBalanceChange(
   change: UserGmTokensBalanceChange,
+  chainId: number,
   context: any
 ): Promise<void> {
   let id = change.account + ":" + change.marketAddress;
@@ -163,6 +170,7 @@ async function saveLatestUserGmTokensBalanceChange(
   if (latestRef == undefined) {
     latestRef = {
       id: id,
+      chainId: chainId,
       latestUserGmTokensBalanceChange_id: change.id,
     };
   }

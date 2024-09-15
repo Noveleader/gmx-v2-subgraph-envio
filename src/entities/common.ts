@@ -6,6 +6,7 @@ export function getIdFromEvent(event: any): string {
 
 export async function getOrCreateTransaction(
   event: any,
+  chainId: number,
   context: any
 ): Promise<Transaction> {
   let id = event.transaction.hash.toString();
@@ -13,6 +14,7 @@ export async function getOrCreateTransaction(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       hash: event.transaction.hash.toString(),
       timestamp: Number(event.block.timestamp),
       blockNumber: Number(event.block.number),

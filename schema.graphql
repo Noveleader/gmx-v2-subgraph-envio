@@ -23,6 +23,7 @@ enum ClaimActionType {
 
 type AffiliateRewardUpdate @entity(immutable: true) {
   id: ID!
+  chainId: Int!
   affiliate: String!
   marketAddress: String!
   tokenAddress: String!
@@ -35,6 +36,8 @@ type AffiliateRewardUpdate @entity(immutable: true) {
 type Order @entity {
   # orderKey
   id: ID!
+
+  chainId: Int!
 
   account: String!
   receiver: String!
@@ -73,6 +76,7 @@ type Order @entity {
 type PositionIncrease @entity(immutable: true) {
   # orderKey
   id: ID!
+  chainId: Int!
   orderKey: String!
   positionKey: String!
   account: String!
@@ -104,6 +108,7 @@ type PositionIncrease @entity(immutable: true) {
 type PositionDecrease @entity(immutable: true) {
   # orderKey
   id: ID!
+  chainId: Int!
   orderKey: String!
   positionKey: String!
   account: String!
@@ -134,6 +139,7 @@ type PositionDecrease @entity(immutable: true) {
 type PositionFeesInfo @entity(immutable: true) {
   # orderKey:eventName
   id: ID!
+  chainId: Int!
   eventName: String!
   orderKey: String!
   marketAddress: String!
@@ -161,6 +167,7 @@ type PositionFeesInfo @entity(immutable: true) {
 type ClaimableCollateral @entity {
   # account:market:token:timeKey
   id: ID!
+  chainId: Int!
   account: String!
   marketAddress: String!
   tokenAddress: String!
@@ -174,6 +181,7 @@ type ClaimableCollateral @entity {
 type ClaimableCollateralGroup @entity {
   # market:token:timeKey
   id: ID!
+  chainId: Int!
   timeKey: String!
   marketAddress: String!
   tokenAddress: String!
@@ -184,6 +192,7 @@ type ClaimableCollateralGroup @entity {
 type SwapInfo @entity(immutable: true) {
   # orderKey:marketAddress
   id: ID!
+  chainId: Int!
   orderKey: String!
   receiver: String!
   marketAddress: String!
@@ -202,6 +211,7 @@ type SwapInfo @entity(immutable: true) {
 type SwapFeesInfo @entity(immutable: true) {
   # eventId
   id: ID!
+  chainId: Int!
   marketAddress: String!
   tokenAddress: String!
 
@@ -217,6 +227,7 @@ type SwapFeesInfo @entity(immutable: true) {
 type CollectedMarketFeesInfo @entity {
   # marketAddress:period:timestampGroup
   id: ID!
+  chainId: Int!
   period: String!
   marketAddress: String!
   feeUsdForPool: BigInt!
@@ -232,6 +243,7 @@ type CollectedMarketFeesInfo @entity {
 type UserGmTokensBalanceChange @entity(immutable: true) {
   # account:marketAddress:timestamp
   id: ID!
+  chainId: Int!
   account: String!
   marketAddress: String!
   tokensBalance: BigInt!
@@ -244,11 +256,14 @@ type UserGmTokensBalanceChange @entity(immutable: true) {
 type LatestUserGmTokensBalanceChangeRef @entity {
   # account:marketAddress
   id: ID!
+  chainId: Int!
   latestUserGmTokensBalanceChange: UserGmTokensBalanceChange
 }
 
 type TradeAction @entity(immutable: true) {
   id: ID!
+  chainId: Int!
+
   eventName: String!
 
   orderKey: String!
@@ -294,6 +309,7 @@ type TradeAction @entity(immutable: true) {
 type TokenPrice @entity {
   # tokenAddress
   id: ID!
+  chainId: Int!
 
   minPrice: BigInt!
   maxPrice: BigInt!
@@ -302,6 +318,8 @@ type TokenPrice @entity {
 type ClaimCollateralAction @entity(immutable: true) {
   # transactionHash:account:eventName
   id: ID!
+  chainId: Int!
+
   eventName: ClaimActionType!
   account: String!
   marketAddresses: [String!]!
@@ -315,6 +333,8 @@ type ClaimCollateralAction @entity(immutable: true) {
 type ClaimAction @entity {
   # transactionHash:account:eventName
   id: ID!
+  chainId: Int!
+
   eventName: ClaimActionType!
   account: String!
   marketAddresses: [String!]!
@@ -328,10 +348,13 @@ type ClaimAction @entity {
 type ClaimRef @entity {
   # order.id
   id: ID!
+  chainId: Int!
 }
 
 type PoolAmountUpdate @entity(immutable: true) {
   id: ID!
+  chainId: Int!
+
   marketAddress: String!
   tokenAddress: String!
   delta: BigInt!
@@ -342,6 +365,8 @@ type PoolAmountUpdate @entity(immutable: true) {
 type ClaimableFundingFeeInfo @entity(immutable: true) {
   # transactionHash:account
   id: ID!
+  chainId: Int!
+
   marketAddresses: [String!]!
   tokenAddresses: [String!]!
   amounts: [BigInt!]!
@@ -349,6 +374,8 @@ type ClaimableFundingFeeInfo @entity(immutable: true) {
 
 type Transaction @entity {
   id: ID!
+  chainId: Int!
+
   from: String!
   to: String!
   hash: String!
@@ -359,6 +386,8 @@ type Transaction @entity {
 
 type MarketInfo @entity {
   id: ID!
+  chainId: Int!
+
   marketToken: String!
   indexToken: String!
   longToken: String!
@@ -370,6 +399,8 @@ type MarketInfo @entity {
 
 type DepositRef @entity {
   id: ID!
+  chainId: Int!
+
   marketAddress: String!
   account: String!
 }
@@ -377,6 +408,8 @@ type DepositRef @entity {
 type VolumeInfo @entity {
   # collateralToken:indexToken:period:timestamp
   id: ID!
+  chainId: Int!
+
   period: String!
   volumeUsd: BigInt!
   marginVolumeUsd: BigInt!
@@ -389,6 +422,8 @@ type VolumeInfo @entity {
 type SwapVolumeInfo @entity {
   # tokenIn:tokenOut:period:timestamp
   id: ID!
+  chainId: Int!
+
   period: String!
   tokenIn: String!
   tokenOut: String!
@@ -399,6 +434,8 @@ type SwapVolumeInfo @entity {
 type PositionVolumeInfo @entity {
   # collateralToken:indexToken:timestamp
   id: ID!
+  chainId: Int!
+
   period: String!
   collateralToken: String!
   indexToken: String!
@@ -409,6 +446,8 @@ type PositionVolumeInfo @entity {
 type User @entity {
   # account address
   id: ID!
+  chainId: Int!
+
   account: String!
 
   totalSwapCount: Int!
@@ -420,6 +459,8 @@ type User @entity {
 type UserStat @entity {
   # timestamp | total
   id: ID!
+  chainId: Int!
+
   totalSwapCount: Int!
   totalPositionCount: Int!
   totalDepositCount: Int!
@@ -432,6 +473,8 @@ type UserStat @entity {
 type SwapFeesInfoWithPeriod @entity {
   # timestamp | total
   id: ID!
+  chainId: Int!
+
   period: String!
 
   totalFeeReceiverUsd: BigInt!
@@ -441,6 +484,8 @@ type SwapFeesInfoWithPeriod @entity {
 type PositionFeesInfoWithPeriod @entity {
   # timestamp | total
   id: ID!
+  chainId: Int!
+
   period: String!
   totalPositionFeeAmountForPool: BigInt!
   totalPositionFeeUsdForPool: BigInt!
@@ -456,6 +501,8 @@ type LiquidityProviderIncentivesStat @entity {
 
   # account:market:period:timestamp
   id: ID!
+  chainId: Int!
+
   period: String!
   timestamp: Int!
   account: String!
@@ -473,6 +520,8 @@ type MarketIncentivesStat @entity {
 
   # marketAddress:period:timestamp
   id: ID!
+  chainId: Int!
+
   period: String!
   timestamp: Int!
   marketAddress: String!
@@ -486,6 +535,7 @@ type MarketIncentivesStat @entity {
 type UserMarketInfo @entity {
   # account:marketAddress
   id: ID!
+  chainId: Int!
 
   marketTokensBalance: BigInt!
   account: String!
@@ -495,6 +545,8 @@ type UserMarketInfo @entity {
 type SellUSDG @entity {
   # it is used as a temporary storage for RemoveLiquidity event
   id: ID!
+  chainId: Int!
+
   txHash: String!
   logIndex: Int!
   feeBasisPoints: BigInt!
@@ -503,6 +555,8 @@ type SellUSDG @entity {
 type UserGlpGmMigrationStat @entity {
   # account:period:timestamp
   id: ID!
+  chainId: Int!
+
   timestamp: Int!
   period: String!
   account: String!
@@ -520,6 +574,7 @@ type UserGlpGmMigrationStat @entity {
 type GlpGmMigrationStat @entity {
   # "total"
   id: ID!
+  chainId: Int!
 
   eligibleRedemptionUsd: BigInt!
   eligibleRedemptionInArb: BigInt!
@@ -528,6 +583,8 @@ type GlpGmMigrationStat @entity {
 type UserTradingIncentivesStat @entity {
   # account:period:timestamp
   id: ID!
+  chainId: Int!
+
   timestamp: Int!
   period: String!
   account: String!
@@ -543,6 +600,8 @@ type UserTradingIncentivesStat @entity {
 type TradingIncentivesStat @entity {
   # period:timestamp
   id: ID!
+  chainId: Int!
+
   timestamp: Int!
   period: String!
 
@@ -557,6 +616,7 @@ type TradingIncentivesStat @entity {
 type Distribution @entity {
   # receiver:txHash:typeId
   id: ID!
+  chainId: Int!
 
   receiver: String!
   amounts: [BigInt!]!

@@ -9,6 +9,7 @@ export async function saveDistribution(
   txHash: string,
   blockNumber: number,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<void> {
   let id = receiver + ":" + txHash + ":" + typeId.toString();
@@ -17,6 +18,7 @@ export async function saveDistribution(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       tokens: new Array<string>(0),
       amounts: new Array<bigint>(0),
       amountsInUsd: new Array<bigint>(0),
@@ -27,7 +29,7 @@ export async function saveDistribution(
       timestamp: 0,
     };
   }
-  
+
   let tokens = entity.tokens;
   tokens.push(token);
 

@@ -7,6 +7,7 @@ import { SetClaimableCollateralFactorForAccountEventData } from "../utils/eventD
 
 export async function handleCollateralClaimed(
   eventData: EventLog1Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let data = new CollateralClaimedEventData(eventData);
@@ -16,6 +17,7 @@ export async function handleCollateralClaimed(
     data.market,
     data.token,
     data.timeKey,
+    chainId,
     context
   );
 
@@ -32,6 +34,7 @@ async function getOrCreateClaimableCollateral(
   market: string,
   token: string,
   timeKey: string,
+  chainId: number,
   context: any
 ): Promise<ClaimableCollateral> {
   let id = account + ":" + market + ":" + token + ":" + timeKey;
@@ -42,6 +45,7 @@ async function getOrCreateClaimableCollateral(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       account: account,
       marketAddress: market,
       tokenAddress: token,
@@ -58,6 +62,7 @@ async function getOrCreateClaimableCollateral(
 
 export async function handleClaimableCollateralUpdated(
   eventData: EventLog1Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let data = new ClaimableCollateralUpdatedEventData(eventData);
@@ -66,12 +71,14 @@ export async function handleClaimableCollateralUpdated(
     data.market,
     data.token,
     data.timeKey,
+    chainId,
     context
   );
   let groupEntity = await getOrCreateClaimableCollateralGroup(
     data.market,
     data.token,
     data.timeKey,
+    chainId,
     context
   );
 
@@ -97,6 +104,7 @@ export async function handleClaimableCollateralUpdated(
 
 export async function handleSetClaimableCollateralFactorForTime(
   eventData: EventLog2Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let data = new SetClaimableCollateralFactorForTimeEventData(eventData);
@@ -105,6 +113,7 @@ export async function handleSetClaimableCollateralFactorForTime(
     data.market,
     data.token,
     data.timeKey,
+    chainId,
     context
   );
 
@@ -146,6 +155,7 @@ export async function handleSetClaimableCollateralFactorForTime(
 
 export async function handleSetClaimableCollateralFactorForAccount(
   eventData: EventLog2Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let data = new SetClaimableCollateralFactorForAccountEventData(eventData);
@@ -155,6 +165,7 @@ export async function handleSetClaimableCollateralFactorForAccount(
     data.market,
     data.token,
     data.timeKey,
+    chainId,
     context
   );
 
@@ -170,6 +181,7 @@ async function getOrCreateClaimableCollateralGroup(
   market: string,
   token: string,
   timeKey: string,
+  chainId: number,
   context: any
 ): Promise<ClaimableCollateralGroup> {
   let id = market + ":" + token + ":" + timeKey.toString();
@@ -179,6 +191,7 @@ async function getOrCreateClaimableCollateralGroup(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       marketAddress: market,
       tokenAddress: token,
       timeKey: timeKey,

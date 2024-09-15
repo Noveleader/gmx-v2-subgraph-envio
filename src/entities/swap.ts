@@ -4,6 +4,7 @@ import { EventLog1Item } from "../interfaces/interface";
 export async function handleSwapInfo(
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<SwapInfo> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -33,6 +34,7 @@ export async function handleSwapInfo(
 
   let swapInfo: SwapInfo = {
     id: swapInfoId,
+    chainId: chainId,
     orderKey: orderKey,
     marketAddress: marketAddress,
     transaction_id: transaction.id,

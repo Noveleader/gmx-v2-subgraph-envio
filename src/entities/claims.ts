@@ -15,6 +15,7 @@ export async function handleCollateralClaimAction(
   eventName: string,
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<void> {
   let data = new CollateralClaimedEventData(eventData);
@@ -22,6 +23,7 @@ export async function handleCollateralClaimAction(
     eventName,
     eventData,
     transaction,
+    chainId,
     context
   );
 
@@ -29,6 +31,7 @@ export async function handleCollateralClaimAction(
     eventName,
     eventData,
     transaction,
+    chainId,
     context
   );
 
@@ -49,6 +52,7 @@ export async function handleCollateralClaimAction(
 export async function saveClaimableFundingFeeInfo(
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<ClaimableFundingFeeInfo> {
   let account = eventData.eventData_addressItems_items[2];
@@ -59,6 +63,7 @@ export async function saveClaimableFundingFeeInfo(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       amounts: new Array<bigint>(0),
       marketAddresses: new Array<string>(0),
       tokenAddresses: new Array<string>(0),
@@ -97,6 +102,7 @@ export function isFundingFeeSettleOrder(order: Order): boolean {
 export async function saveClaimActionOnOrderCreated(
   transaction: Transaction,
   eventData: EventLog2Item | EventLog1Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
@@ -111,6 +117,7 @@ export async function saveClaimActionOnOrderCreated(
     "SettleFundingFeeCreated",
     eventData,
     transaction,
+    chainId,
     context
   );
 
@@ -129,17 +136,19 @@ export async function saveClaimActionOnOrderCreated(
   };
 
   context.ClaimAction.set(claimAction);
-  await createClaimRefIfNotExists(orderId, context);
+  await createClaimRefIfNotExists(orderId, chainId, context);
 }
 
 async function createClaimRefIfNotExists(
   orderId: string,
+  chainId: number,
   context: any
 ): Promise<void> {
   const claimRef: ClaimRef | undefined = await context.CLaimRef.get(orderId);
   if (claimRef == undefined) {
     let entity: ClaimRef = {
       id: orderId,
+      chainId: chainId,
     };
     context.ClaimRef.set(entity);
   }
@@ -149,6 +158,7 @@ async function getOrCreateClaimCollateralAction(
   eventName: string,
   eventData: EventLog1Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<ClaimCollateralAction> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
@@ -162,6 +172,7 @@ async function getOrCreateClaimCollateralAction(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       marketAddresses: new Array<string>(0),
       tokenAddresses: new Array<string>(0),
       amounts: new Array<bigint>(0),
@@ -181,6 +192,7 @@ async function getOrCreateClaimAction(
   eventName: string,
   eventData: EventLog1Item | EventLog2Item,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<ClaimAction> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
@@ -192,6 +204,7 @@ async function getOrCreateClaimAction(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       marketAddresses: new Array<string>(0),
       tokenAddresses: new Array<string>(0),
       amounts: new Array<bigint>(0),

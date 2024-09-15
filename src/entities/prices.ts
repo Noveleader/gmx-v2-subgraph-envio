@@ -2,7 +2,6 @@ import { TokenPrice } from "generated/src/Types.gen";
 import { ZERO } from "../utils/number";
 import { EventLog1Item } from "../interfaces/interface";
 import { OraclePriceUpdateEventData } from "../utils/eventData/OraclePriceUpdateEventData";
-import { estimateMaxPriorityFeePerGas } from "viem/_types/actions/public/estimateMaxPriorityFeePerGas";
 
 export async function convertUsdToAmount(
   tokenAddress: string,
@@ -44,10 +43,11 @@ export async function convertAmountToUsd(
 
 export async function handleOraclePriceUpdate(
   eventData: EventLog1Item,
+  chainId: number,
   context: any
 ): Promise<void> {
   let event = new OraclePriceUpdateEventData(eventData);
-  let tokenPrice = await getOrCreateTokenPrice(event.token, context);
+  let tokenPrice = await getOrCreateTokenPrice(event.token, chainId, context);
 
   tokenPrice = {
     ...tokenPrice,
@@ -60,6 +60,7 @@ export async function handleOraclePriceUpdate(
 
 async function getOrCreateTokenPrice(
   tokenAddress: string,
+  chainId: number,
   context: any
 ): Promise<TokenPrice> {
   let tokenPrice: TokenPrice | undefined = await context.TokenPrice.get(
@@ -70,6 +71,7 @@ async function getOrCreateTokenPrice(
   } else {
     tokenPrice = {
       id: tokenAddress,
+      chainId: chainId,
       maxPrice: ZERO,
       minPrice: ZERO,
     };

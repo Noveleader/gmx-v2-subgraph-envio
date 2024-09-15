@@ -18,9 +18,10 @@ export async function saveSwapExecutedTradeAction(
   eventId: string,
   order: Order,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<void> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   let swapPath = order.swapPath!;
 
@@ -60,10 +61,12 @@ export async function saveSwapExecutedTradeAction(
 
 export function getTradeActionFromOrder(
   eventId: string,
+  chainId: number,
   order: Order
 ): TradeAction {
   let newTradeActionEntity: TradeAction = {
     id: eventId,
+    chainId: chainId,
     eventName: "",
 
     orderKey: order.id,
@@ -111,14 +114,15 @@ export async function savePositionIncreaseExecutedTradeAction(
   eventId: string,
   order: Order,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   let positionIncrease: PositionIncrease | undefined =
     await context.PositionIncrease.get(order.id);
 
-  let marketInfo = await getMarketInfo(order.marketAddress, context);
+  let marketInfo = await getMarketInfo(order.marketAddress, chainId, context);
 
   let tokenPrice = await context.TokenPrice.get(marketInfo.indexToken);
 
@@ -168,16 +172,17 @@ export async function savePositionDecreaseExecutedTradeAction(
   eventId: string,
   order: Order,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<void> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   let positionDecrease: PositionDecrease | undefined =
     await context.PositionDecrease.get(order.id);
 
   let positionFeesInfo: PositionFeesInfo | undefined = undefined;
 
-  let marketInfo = await getMarketInfo(order.marketAddress, context);
+  let marketInfo = await getMarketInfo(order.marketAddress, chainId, context);
 
   let tokenPrice: TokenPrice = await context.TokenPrice.get(
     marketInfo.indexToken
@@ -251,9 +256,10 @@ export async function saveOrderCancelledTradeAction(
   reason: string,
   reasonBytes: string,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   tradeAction = {
     ...tradeAction,
@@ -273,9 +279,10 @@ export async function saveOrderUpdatedTradeAction(
   eventId: string,
   order: Order,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   tradeAction = {
     ...tradeAction,
@@ -295,12 +302,13 @@ export async function saveOrderFrozenTradeAction(
   reason: string,
   reasonBytes: string,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
 
   if (order.marketAddress != ZERO_ADDRESS) {
-    let marketInfo = await getMarketInfo(order.marketAddress, context);
+    let marketInfo = await getMarketInfo(order.marketAddress, chainId, context);
     let tokenPrice = await context.TokenPrice.get(marketInfo.indexToken);
     tradeAction = {
       ...tradeAction,
@@ -327,9 +335,10 @@ export async function saveOrderCreatedTradeAction(
   eventId: string,
   order: Order,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<TradeAction> {
-  let tradeAction = getTradeActionFromOrder(eventId, order);
+  let tradeAction = getTradeActionFromOrder(eventId, chainId, order);
   tradeAction = {
     ...tradeAction,
     eventName: "OrderCreated",

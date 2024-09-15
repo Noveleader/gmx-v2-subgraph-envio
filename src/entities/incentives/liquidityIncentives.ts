@@ -8,7 +8,6 @@ import {
 import { periodToSeconds, timestampToPeriodStart } from "../../utils/time";
 import { ZERO } from "../../utils/number";
 import { convertAmountToUsd, convertUsdToAmount } from "../prices";
-import { ZeroAddress } from "ethers";
 import { EventLog1Item } from "../../interfaces/interface";
 import { MarketPoolValueUpdatedEventData } from "../../utils/eventData/MarketPoolValueUpdatedEventData";
 import { getMarketInfo } from "../markets";
@@ -33,6 +32,7 @@ export async function saveUserGlpGmMigrationStatGlpData(
   timestamp: number,
   usdgAmount: BigInt,
   feeBasisPoints: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (!_incentivesActive(timestamp)) {
@@ -42,6 +42,7 @@ export async function saveUserGlpGmMigrationStatGlpData(
   let entity = await _getOrCreateUserGlpGmMigrationStatGlpData(
     account,
     timestamp,
+    chainId,
     context
   );
 
@@ -50,11 +51,13 @@ export async function saveUserGlpGmMigrationStatGlpData(
     entity.glpRedemptionUsd,
     entity.glpRedemptionUsd + usdAmount,
     entity.gmDepositUsd,
+    chainId,
     context
   );
 
   let maxFeeBasisPointsForRebate = await _getMaxFeeBasisPointsForRebate(
     eligibleDiff.inArb,
+    chainId,
     context
   );
   if (feeBasisPoints > maxFeeBasisPointsForRebate) {
@@ -85,18 +88,19 @@ export async function saveUserGlpGmMigrationStatGlpData(
 
   context.UserGlpGmMigrationStat.set(entity);
 
-  await _saveGlpGmMigrationStat(eligibleDiff, context);
+  await _saveGlpGmMigrationStat(eligibleDiff, chainId, context);
 }
 
 async function _saveGlpGmMigrationStat(
   diff: EligibleRedemptionDiffResult,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (diff.usd == ZERO) {
     return;
   }
 
-  let entity = await _getOrCreateGlpGmMigrationStat(context);
+  let entity = await _getOrCreateGlpGmMigrationStat(chainId, context);
   entity = {
     ...entity,
     eligibleRedemptionUsd:
@@ -111,6 +115,7 @@ async function _saveGlpGmMigrationStat(
 async function _getOrCreateUserGlpGmMigrationStatGlpData(
   account: string,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<UserGlpGmMigrationStat> {
   let period = "1w";
@@ -122,6 +127,7 @@ async function _getOrCreateUserGlpGmMigrationStatGlpData(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       period: period,
       account: account,
       timestamp: startTimestamp,
@@ -146,13 +152,14 @@ async function _getCappedEligibleRedemptionDiff(
   usdBefore: BigInt,
   usdAfter: BigInt,
   otherUsd: BigInt,
+  chainId: number,
   context: any
 ): Promise<EligibleRedemptionDiffResult> {
   // case 1: gmDepositUsd: 1000, gmDepositUsd after: 1500, glpRedemptionUsd: 2000 => diffUsd: 500
   // case 2: gmDepositUsd: 1000, gmDepositUsd after: 1500, glpRedemptionUsd: 1200 => diffUsd: 200
   // case 3: gmDepositUsd: 1000, gmDepositUsd after: 1500, glpRedemptionUsd: 800 => diffUsd: 0
 
-  let entity = await _getOrCreateGlpGmMigrationStat(context);
+  let entity = await _getOrCreateGlpGmMigrationStat(chainId, context);
 
   if (entity.eligibleRedemptionInArb > GLP_GM_MIGRATION_CAP_THRESHOLD_IN_ARB) {
     return new EligibleRedemptionDiffResult(ZERO, ZERO);
@@ -184,6 +191,7 @@ async function _getCappedEligibleRedemptionDiff(
 }
 
 async function _getOrCreateGlpGmMigrationStat(
+  chainId: number,
   context: any
 ): Promise<GlpGmMigrationStat> {
   let id = "total";
@@ -192,6 +200,7 @@ async function _getOrCreateGlpGmMigrationStat(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       eligibleRedemptionUsd: ZERO,
       eligibleRedemptionInArb: ZERO,
     };
@@ -206,9 +215,10 @@ function _getArbTokenAddress(): string {
 
 async function _getMaxFeeBasisPointsForRebate(
   eligibleDiffInArb: BigInt,
+  chainId: number,
   context: any
 ): Promise<BigInt> {
-  let globalEntity = await _getOrCreateGlpGmMigrationStat(context);
+  let globalEntity = await _getOrCreateGlpGmMigrationStat(context, chainId);
   let eligibleRedemptionInArb = globalEntity.eligibleRedemptionInArb;
 
   let nextEligibleRedemptionInArb =
@@ -245,6 +255,7 @@ export async function saveLiquidityProviderIncentivesStat(
   period: string,
   marketTokenBalanceDelta: BigInt,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (!_incentivesActive(timestamp)) {
@@ -257,6 +268,7 @@ export async function saveLiquidityProviderIncentivesStat(
       marketAddress,
       period,
       timestamp,
+      chainId,
       context
     );
 
@@ -264,6 +276,7 @@ export async function saveLiquidityProviderIncentivesStat(
     let userMarketInfo = await _getUserMarketInfo(
       account,
       marketAddress,
+      chainId,
       context
     );
 
@@ -309,6 +322,7 @@ async function _getOrCreateLiquidityProviderIncentivesStat(
   marketAddress: string,
   period: string,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<LiquidityProviderIncentivesStat> {
   let startTimestamp = timestampToPeriodStart(timestamp, period);
@@ -327,6 +341,7 @@ async function _getOrCreateLiquidityProviderIncentivesStat(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       timestamp: startTimestamp,
       period: period,
       account: account,
@@ -344,6 +359,7 @@ async function _getOrCreateLiquidityProviderIncentivesStat(
 async function _getUserMarketInfo(
   account: string,
   marketAddress: string,
+  chainId: number,
   context: any
 ): Promise<UserMarketInfo> {
   let id = account + ":" + marketAddress;
@@ -352,6 +368,7 @@ async function _getUserMarketInfo(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       marketTokensBalance: ZERO,
       account: account,
       marketAddress: marketAddress,
@@ -365,11 +382,13 @@ export async function saveUserMarketInfo(
   account: string,
   marketAddress: string,
   marketTokensDelta: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   let entity: UserMarketInfo = await _getUserMarketInfo(
     account,
     marketAddress,
+    chainId,
     context
   );
   entity = {
@@ -384,6 +403,7 @@ export async function saveUserGlpGmMigrationStatGmData(
   account: string,
   timestamp: number,
   depositUsd: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (!_incentivesActive(timestamp)) {
@@ -393,6 +413,7 @@ export async function saveUserGlpGmMigrationStatGmData(
   let entity = await _getOrCreateUserGlpGmMigrationStatGlpData(
     account,
     timestamp,
+    chainId,
     context
   );
 
@@ -400,6 +421,7 @@ export async function saveUserGlpGmMigrationStatGmData(
     entity.gmDepositUsd,
     entity.gmDepositUsd + BigInt(depositUsd.toString()),
     entity.glpRedemptionUsd,
+    chainId,
     context
   );
 
@@ -421,12 +443,13 @@ export async function saveUserGlpGmMigrationStatGmData(
 
   context.UserGlpGmMigrationStat.set(entity);
 
-  await _saveGlpGmMigrationStat(eligibleDiff, context);
+  await _saveGlpGmMigrationStat(eligibleDiff, chainId, context);
 }
 
 export async function saveMarketIncentivesStat(
   eventData: EventLog1Item,
   event: any,
+  chainId: number,
   context: any
 ): Promise<void> {
   if (!_incentivesActive(event.block.timestamp)) {
@@ -451,6 +474,7 @@ export async function saveMarketIncentivesStat(
   let entity = await _getOrCreateMarketIncentivesStat(
     marketAddress,
     event.block.timestamp,
+    chainId,
     context
   );
 
@@ -458,7 +482,7 @@ export async function saveMarketIncentivesStat(
     // new entity was created
     // interpolate cumulative time * marketTokensBalance starting from the beginning of the period
 
-    let marketInfo = await getMarketInfo(marketAddress, context);
+    let marketInfo = await getMarketInfo(marketAddress, chainId, context);
     let lastMarketTokensSupply =
       marketInfo.marketTokensSupplyFromPoolUpdated == undefined
         ? marketInfo.marketTokensSupply
@@ -503,6 +527,7 @@ export async function saveMarketIncentivesStat(
 async function _getOrCreateMarketIncentivesStat(
   marketAddress: string,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<MarketIncentivesStat> {
   let period = "1w";
@@ -515,6 +540,7 @@ async function _getOrCreateMarketIncentivesStat(
   if (entity == undefined) {
     entity = {
       id: id,
+      chainId: chainId,
       timestamp: startTimestamp,
       period: period,
       marketAddress: marketAddress,

@@ -15,6 +15,7 @@ import { PositionImpactPoolDistributedEventData } from "../utils/eventData/Posit
 import { getTokenPrice } from "./prices";
 import { getMarketPoolValueFromContract } from "../contracts/getMarketPoolValueFromContract";
 import { getMarketTokensSupplyFromContract } from "../contracts/getMarketTokensSupplyFromContract";
+import { numberToBytes } from "viem";
 
 export let swapFeeTypes = new Map<string, string>();
 
@@ -37,6 +38,7 @@ export async function getOrCreateCollectedMarketFees(
   marketAddress: string,
   timestamp: number,
   period: string,
+  chainId: number,
   context: any
 ): Promise<CollectedMarketFeesInfo> {
   let timestampGroup = timestampToPeriodStart(timestamp, period);
@@ -53,6 +55,7 @@ export async function getOrCreateCollectedMarketFees(
   if (collectedFees == undefined) {
     collectedFees = {
       id: id,
+      chainId: chainId,
       marketAddress: marketAddress,
       period: period,
       timestampGroup: timestampGroup,
@@ -73,6 +76,7 @@ export async function saveSwapFeesInfo(
   eventData: EventLog1Item,
   eventId: string,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<SwapFeesInfo> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
@@ -105,6 +109,7 @@ export async function saveSwapFeesInfo(
 
   let swapFeesInfo: SwapFeesInfo = {
     id: eventId,
+    chainId: chainId,
     marketAddress: marketAddress,
     tokenAddress: tokenAddress,
     swapFeeType: swapFeeType,
@@ -148,12 +153,14 @@ export async function saveCollectedMarketFees(
   poolValue: BigInt,
   feeUsdForPool: BigInt,
   marketTokensSupply: BigInt,
+  chainId: number,
   context: any
 ): Promise<void> {
   let totalFees: CollectedMarketFeesInfo = await getOrCreateCollectedMarketFees(
     marketAddress,
     transaction.timestamp,
     "total",
+    chainId,
     context
   );
 
@@ -189,6 +196,7 @@ export async function saveCollectedMarketFees(
     marketAddress,
     transaction.timestamp,
     "1h",
+    chainId,
     context
   );
 
@@ -292,6 +300,7 @@ export async function saveSwapFeesInfoWithPeriod(
   feeReceiverAmount: BigInt,
   tokenPrice: BigInt,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<void> {
   let dailyTimestampGroup = timestampToPeriodStart(timestamp, "1d");
@@ -301,12 +310,14 @@ export async function saveSwapFeesInfoWithPeriod(
   let dailyFees = await getOrCreateSwapFeesInfoWithPeriod(
     dailyId,
     "1d",
+    chainId,
     context
   );
 
   let totalFees = await getOrCreateSwapFeesInfoWithPeriod(
     totalId,
     "total",
+    chainId,
     context
   );
 
@@ -333,6 +344,7 @@ export async function savePositionFeesInfo(
   eventData: EventLog1Item,
   eventName: string,
   transaction: Transaction,
+  chainId: number,
   context: any
 ): Promise<PositionFeesInfo> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
@@ -367,6 +379,7 @@ export async function savePositionFeesInfo(
 
   let feesInfo: PositionFeesInfo = {
     id: id,
+    chainId: chainId,
     orderKey: orderKey,
     eventName: eventName,
     marketAddress: marketAddress,
@@ -397,6 +410,7 @@ export async function savePositionFeesInfoWithPeriod(
   borrowingFeeUsd: BigInt,
   tokenPrice: BigInt,
   timestamp: number,
+  chainId: number,
   context: any
 ): Promise<void> {
   let dailyTimestampGroup = timestampToPeriodStart(timestamp, "1d");
@@ -406,12 +420,14 @@ export async function savePositionFeesInfoWithPeriod(
   let dailyFees = await getOrCreatePositionFeesInfoWithPeriod(
     dailyId,
     "1d",
+    chainId,
     context
   );
 
   let totalFees = await getOrCreatePositionFeesInfoWithPeriod(
     totalId,
     "total",
+    chainId,
     context
   );
 
@@ -515,6 +531,7 @@ export async function handlePositionImpactPoolDistributed(
     poolValue,
     amountUsd,
     marketTokensSupply,
+    chainId,
     context
   );
 }
@@ -522,6 +539,7 @@ export async function handlePositionImpactPoolDistributed(
 async function getOrCreatePositionFeesInfoWithPeriod(
   id: string,
   period: string,
+  chainId: number,
   context: any
 ): Promise<PositionFeesInfoWithPeriod> {
   let feeInfo: PositionFeesInfoWithPeriod | undefined =
@@ -529,6 +547,7 @@ async function getOrCreatePositionFeesInfoWithPeriod(
   if (feeInfo == undefined) {
     feeInfo = {
       id: id,
+      chainId: chainId,
       period: period,
       totalBorrowingFeeUsd: ZERO,
       totalPositionFeeAmount: ZERO,
@@ -544,6 +563,7 @@ async function getOrCreatePositionFeesInfoWithPeriod(
 async function getOrCreateSwapFeesInfoWithPeriod(
   id: string,
   period: string,
+  chainId: number,
   context: any
 ): Promise<SwapFeesInfoWithPeriod> {
   let feeInfo: SwapFeesInfoWithPeriod | undefined =
@@ -552,6 +572,7 @@ async function getOrCreateSwapFeesInfoWithPeriod(
   if (feeInfo == undefined) {
     feeInfo = {
       id: id,
+      chainId: chainId,
       period: period,
       totalFeeUsdForPool: ZERO,
       totalFeeReceiverUsd: ZERO,
