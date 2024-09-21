@@ -136,7 +136,7 @@ query GetPositionFeesInfoArbitrumOne {
   }
 }
 ```
-Find all the other fields related to `Positon Fees Info` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L139)
+Find all the other fields related to `Positon Fees Info` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L139)
 
 ### Claimable Collateral
 
@@ -156,7 +156,7 @@ query GetClaimableCollateralArbitrumOne {
   }
 }
 ```
-Find all the other fields related to `Claimable Collateral` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L167)
+Find all the other fields related to `Claimable Collateral` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L167)
 
 
 ### Swap Info
@@ -180,7 +180,7 @@ query GetSwapInfoAvalanche {
   }
 }
 ```
-Find all the other fields related to `Swap Info` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L192)
+Find all the other fields related to `Swap Info` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L192)
 
 ### Swap Fees Info
 
@@ -199,7 +199,7 @@ query GetSwapFeesInfoAvalanche {
   }
 }
 ```
-Find all the other fields related to `Swap Fees Info` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L211)
+Find all the other fields related to `Swap Fees Info` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L211)
 
 ### Trade Action
 
@@ -219,7 +219,7 @@ query GetTradeActionArbitrumOne {
   }
 }
 ```
-Find all the other fields related to `Trade Action` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L263)
+Find all the other fields related to `Trade Action` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L263)
 
 ### Token Price
 
@@ -236,7 +236,7 @@ query GetTokenPriceArbitrumOne {
   }
 }
 ```
-Find all the other fields related to `Token Price` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L309)
+Find all the other fields related to `Token Price` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L309)
 
 ### User
 
@@ -255,7 +255,7 @@ query GetUserDataArbitrumOne{
   }
 }
 ```
-Find all the other fields related to `User` [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L446)
+Find all the other fields related to `User` Entity [here](https://github.com/Noveleader/gmx-v2-subgraph-envio/blob/b4bd7fcd95b2dffad434a18e3492424e7b377612/schema.graphql#L446)
 
 ## License
 
