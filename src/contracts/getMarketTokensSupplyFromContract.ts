@@ -2,7 +2,7 @@ import { getClient } from "../utils/client";
 import { ZERO } from "../utils/number";
 import { Address, GetBlockNumberErrorType } from "viem";
 import MarketToken from "../../abis/MarketToken.json";
-import { MarketTokensSupplyCache } from "../utils/cache";
+import { MarketTokensSupplyCache } from "../utils/cache_new";
 
 export async function getMarketTokensSupplyFromContract(
   marketAddress: string,
@@ -11,8 +11,14 @@ export async function getMarketTokensSupplyFromContract(
   context: any
 ): Promise<BigInt> {
   const id = `${marketAddress}:${blockNumber}:marketTokenSupply`;
-  const marketTokensSupplyCache = await MarketTokensSupplyCache.init();
-  const marketTokenSupplyCached = await marketTokensSupplyCache.read(id);
+  const marketTokensSupplyCache = await MarketTokensSupplyCache.initialize(
+    chainId,
+    blockNumber
+  );
+  const marketTokenSupplyCached = await marketTokensSupplyCache.read(
+    id,
+    blockNumber
+  );
 
   if (marketTokenSupplyCached) {
     context.log.info(`Returning Data from cache for key: ${id}`);
@@ -32,7 +38,7 @@ export async function getMarketTokensSupplyFromContract(
     })) as BigInt;
 
     context.log.info(`The market tokens supply is ${res}`);
-    await marketTokensSupplyCache.add(id, res.toString());
+    await marketTokensSupplyCache.add(id, res.toString(), chainId, blockNumber);
   } catch (e) {
     const error = e as GetBlockNumberErrorType;
     context.log.warn(

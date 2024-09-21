@@ -6,7 +6,7 @@ import { getClient } from "../utils/client";
 import Reader from "../../abis/Reader.json";
 import { ZERO } from "../utils/number";
 import { Address, GetBlockNumberErrorType } from "viem";
-import { PoolValueCache } from "../utils/cache";
+import { PoolValueCache } from "../utils/cache_new";
 
 let ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 let MAX_PNL_FACTOR_FOR_TRADERS: string =
@@ -19,8 +19,14 @@ export async function getMarketPoolValueFromContract(
   context: any
 ): Promise<BigInt> {
   const id = `${marketAddress}:${transaction.blockNumber}:poolValue`;
-  const poolValueCache = await PoolValueCache.init();
-  const poolValueCached = await poolValueCache.read(id);
+  const poolValueCache = await PoolValueCache.initialize(
+    chainId,
+    transaction.blockNumber
+  );
+  const poolValueCached = await poolValueCache.read(
+    id,
+    transaction.blockNumber
+  );
 
   if (poolValueCached) {
     context.log.info(`Returning Data from cache for key: ${id}`);
@@ -83,7 +89,12 @@ export async function getMarketPoolValueFromContract(
       `Pool Value is ${poolValue} for the block ${transaction.blockNumber} for these market args: ${marketArg}`
     );
 
-    await poolValueCache.add(id, poolValue.toString());
+    await poolValueCache.add(
+      id,
+      poolValue.toString(),
+      chainId,
+      transaction.blockNumber
+    );
   } catch (e) {
     const error = e as GetBlockNumberErrorType;
     context.log.warn(
