@@ -87,8 +87,8 @@ class CacheBase {
       // Check if the DB file is full and create a new one if necessary
       const stats = fs.statSync(filePath);
       if (stats.size >= MAX_DB_SIZE) {
-        // Rename the file to include the endBlock
-        const newFileName = `${fileStartBlock}_${blockNumber}.db`;
+        const currentFileName = path.basename(filePath, ".db");
+        const newFileName = `${currentFileName}_${blockNumber}.db`;
         fs.renameSync(filePath, path.join(folderPath, newFileName));
         continue;
       } else {
@@ -111,8 +111,8 @@ class CacheBase {
   // Extract the block range from the file name (assuming format: cache_{index}_{startBlock}_{endBlock}.db)
   private static extractBlockRange(fileName: string): [number, number | null] {
     const parts = fileName.split("_");
-    const startBlock = parseInt(parts[1]);
-    const endBlock = parts[2] ? parseInt(parts[2].replace(".db", "")) : null;
+    const startBlock = parseInt(parts[2]);
+    const endBlock = parts[3] ? parseInt(parts[3].replace(".db", "")) : null;
     return [startBlock, endBlock];
   }
 
