@@ -69,6 +69,8 @@ networks:
 
 rollback_on_reorg: false
 
+unordered_multichain_mode: true # since there is no cross over between entities across different chains this setting is safe
+
 field_selection:
   transaction_fields:
     - "hash"
