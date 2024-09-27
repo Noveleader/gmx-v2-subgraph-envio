@@ -31,3 +31,4 @@ build
 *.bs.js
 generated
 .env
+.DS_Store
