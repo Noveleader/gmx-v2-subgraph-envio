@@ -74,6 +74,7 @@ export async function handleClaimableCollateralUpdated(
     chainId,
     context
   );
+
   let groupEntity = await getOrCreateClaimableCollateralGroup(
     data.market,
     data.token,
@@ -103,7 +104,7 @@ export async function handleClaimableCollateralUpdated(
   context.log.info(`ClaimableCollateralGroup.set a`);
   console.log(entity);
 
-  context.ClaimableCollateralGroup.set(entity);
+  context.ClaimableCollateralGroup.set(groupEntity);
 }
 
 export async function handleSetClaimableCollateralFactorForTime(
