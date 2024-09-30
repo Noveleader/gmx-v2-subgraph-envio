@@ -99,6 +99,10 @@ export async function handleClaimableCollateralUpdated(
   };
 
   context.ClaimableCollateral.set(entity);
+
+  context.log.info(`ClaimableCollateralGroup.set a`);
+  console.log(entity);
+
   context.ClaimableCollateralGroup.set(entity);
 }
 
@@ -149,6 +153,9 @@ export async function handleSetClaimableCollateralFactorForTime(
 
     context.ClaimableCollateral.set(claimable);
   }
+
+  context.log.info(`ClaimableCollateralGroup.set a`);
+  console.log(entity);
 
   context.ClaimableCollateralGroup.set(entity);
 }
