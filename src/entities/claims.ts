@@ -125,10 +125,10 @@ export async function saveClaimActionOnOrderCreated(
   let marketAddresses = claimAction.marketAddresses;
   marketAddresses.push(marketAddress);
 
-  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let isLong = eventDataBoolItemsItems[0];
   let isLongOrders = claimAction.isLongOrders;
-  isLongOrders.push(isLong);
-
+  isLongOrders.push(Boolean(isLong));
+  
   claimAction = {
     ...claimAction,
     marketAddresses: marketAddresses,
@@ -139,12 +139,126 @@ export async function saveClaimActionOnOrderCreated(
   await createClaimRefIfNotExists(orderId, chainId, context);
 }
 
+export async function saveClaimActionOnOrderCancelled(
+  transaction: Transaction,
+  eventData: EventLog1Item | EventLog2Item,
+  chainId: number,
+  context: any
+) {
+  let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
+
+  let claimAction = await getOrCreateClaimAction(
+    "SettleFundingFeeCancelled",
+    eventData,
+    transaction,
+    chainId,
+    context
+  );
+
+  let orderId = eventDataBytes32ItemsItems[0];
+  let order = await context.Order.get(orderId);
+
+  if (order == undefined) throw new Error("Order not found");
+
+  let marketAddresses = claimAction.marketAddresses;
+  marketAddresses.push(order.marketAddress);
+
+  let isLongOrders = claimAction.isLongOrders;
+  isLongOrders.push(Boolean(order.isLong));
+
+  claimAction = {
+    ...claimAction,
+    marketAddresses: marketAddresses,
+    isLongOrders: isLongOrders,
+  };
+
+  context.ClaimAction.set(claimAction);
+}
+
+export async function saveClaimActionOnOrderExecuted(
+  transaction: Transaction,
+  eventData: EventLog1Item | EventLog2Item,
+  chainId: number,
+  context: any
+) {
+  let eventDataBytes32ItemsItems = eventData.eventData_bytes32Items_items;
+
+  let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
+
+  let claimAction = await getOrCreateClaimAction(
+    "SettleFundingFeeExecuted",
+    eventData,
+    transaction,
+    chainId,
+    context
+  );
+
+  let orderId = eventDataBytes32ItemsItems[0];
+  let order = await context.Order.get(orderId);
+
+  if (order == undefined) {
+    throw new Error("Order not found");
+  }
+
+  let account = eventDataAddressItemsItems[0];
+  let claimableFundingFeeInfoId = transaction.id + ":" + account;
+  let claimableFundingFeeInfo = await context.ClaimableFundingFeeInfo.get(
+    claimableFundingFeeInfoId
+  );
+
+  if (claimableFundingFeeInfo == undefined) {
+    return;
+  }
+
+  let sourceTokenAddresses = claimableFundingFeeInfo.tokenAddresses;
+
+  for (let i = 0; i < sourceTokenAddresses.length; i++) {
+    let sourceTokenAddress = sourceTokenAddresses[i];
+    let targetTokenAddresses = claimAction.tokenAddresses;
+    targetTokenAddresses.push(sourceTokenAddress);
+    claimAction = {
+      ...claimAction,
+      tokenAddresses: targetTokenAddresses,
+    };
+  }
+
+  let sourceAmounts = claimableFundingFeeInfo.amounts;
+  let targetAmounts = claimAction.amounts;
+
+  for (let i = 0; i < sourceAmounts.length; i++) {
+    let sourceAmount = sourceAmounts[i];
+    targetAmounts.push(sourceAmount);
+  }
+
+  claimAction = {
+    ...claimAction,
+    amounts: targetAmounts,
+  };
+
+  let tokensCount = claimableFundingFeeInfo.tokenAddresses.length;
+  let marketAddresses = claimAction.marketAddresses;
+  let isLongOrders = claimAction.isLongOrders;
+
+  for (let i = 0; i < tokensCount; i++) {
+    marketAddresses.push(order.marketAddress);
+    isLongOrders.push(Boolean(order.isLong));
+  }
+
+  claimAction = {
+    ...claimAction,
+    marketAddresses: marketAddresses,
+    isLongOrders: isLongOrders,
+  };
+
+  context.ClaimAction.set(claimAction);
+}
+
 async function createClaimRefIfNotExists(
   orderId: string,
   chainId: number,
   context: any
 ): Promise<void> {
-  const claimRef: ClaimRef | undefined = await context.CLaimRef.get(orderId);
+  const claimRef: ClaimRef | undefined = await context.ClaimRef.get(orderId);
   if (claimRef == undefined) {
     let entity: ClaimRef = {
       id: orderId,

@@ -90,6 +90,8 @@ import {
   saveClaimableFundingFeeInfo as handleClaimableFundingUpdated,
   isFundingFeeSettleOrder,
   saveClaimActionOnOrderCreated,
+  saveClaimActionOnOrderCancelled,
+  saveClaimActionOnOrderExecuted,
 } from "./entities/claims";
 import {
   handleClaimableCollateralUpdated,
@@ -147,7 +149,7 @@ GlpManager_RemoveLiquidity_handler(async ({ event, context }) => {
     throw new Error("SellUSDG entity tx hashes don't match");
   }
 
-  saveUserGlpGmMigrationStatGlpData(
+  await saveUserGlpGmMigrationStatGlpData(
     event.params.account.toString(),
     Number(event.block.timestamp),
     event.params.usdgAmount,
@@ -165,7 +167,7 @@ BatchSender_BatchSend_handler(async ({ event, context }) => {
 
   for (let i = 0; i < event.params.accounts.length; i++) {
     let receiver = receivers[i].toString();
-    saveDistribution(
+    await saveDistribution(
       receiver,
       token,
       amounts[i],
@@ -187,7 +189,7 @@ BatchSenderNew_BatchSend_handler(async ({ event, context }) => {
 
   for (let i = 0; i < event.params.accounts.length; i++) {
     let receiver = receivers[i].toString();
-    saveDistribution(
+    await saveDistribution(
       receiver,
       token,
       amounts[i],
@@ -989,7 +991,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
         context
       );
     } else {
-      saveOrderCreatedTradeAction(
+      await saveOrderCreatedTradeAction(
         eventId,
         order,
         transaction,
@@ -1087,7 +1089,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
     ) {
       let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
       if (claimRef != undefined) {
-        await saveClaimActionOnOrderCreated(
+        await saveClaimActionOnOrderExecuted(
           transaction,
           eventData,
           event.chainId,
@@ -1118,7 +1120,7 @@ EventEmitter_EventLog2_handler(async ({ event, context }) => {
       let claimRef: ClaimRef | undefined = await context.ClaimRef.get(order.id);
 
       if (claimRef != undefined) {
-        await saveClaimActionOnOrderCreated(
+        await saveClaimActionOnOrderCancelled(
           transaction,
           eventData,
           event.chainId,

@@ -9,12 +9,18 @@ export function getClient(chainId: number) {
     chain = avalanche;
     return createPublicClient({
       chain: chain,
-      transport: process.env.WSS_AVAX ? webSocket(process.env.WSS_AVAX) : http(process.env.RPC_AVAX),
+      transport:
+        /*process.env.WSS_AVAX ? webSocket(process.env.WSS_AVAX) : */ http(
+          process.env.RPC_AVAX
+        ),
     });
   }
 
   return createPublicClient({
     chain: chain,
-    transport: process.env.WSS_ARB ? webSocket(process.env.WSS_ARB) : http(process.env.RPC_ARB),
+    transport:
+      /* process.env.WSS_ARB ? webSocket(process.env.WSS_ARB) : */ http(
+        process.env.RPC_ARB
+      ),
   });
 }
