@@ -40,6 +40,12 @@ contracts:
     events:
       - event: Transfer(address indexed from, address indexed to, uint256 value)
 
+  - name: GlvTokenTemplate
+    abi_file_path: ./abis/GlvToken.json
+    handler: ./src/mapping.ts
+    events:
+      - event: Transfer(address indexed from, address indexed to, uint256 value)
+
 networks:
   - id: 42161 # Arbitrum One
     start_block: 107737756
@@ -55,6 +61,7 @@ networks:
       - name: BatchSenderNew
         address: 0x5384E6cAd96B2877B5B3337A277577053BD1941D
       - name: MarketTokenTemplate
+      - name: GlvTokenTemplate
 
   - id: 43114 # Avalanche
     start_block: 32162455
@@ -66,6 +73,7 @@ networks:
       - name: BatchSenderNew
         address: 0x0BEa5D3081921A08d73f150126f99cda0eb29C0e
       - name: MarketTokenTemplate
+      - name: GlvTokenTemplate
 
 rollback_on_reorg: false
 

@@ -192,7 +192,7 @@ export async function saveCollectedMarketFees(
 
   context.CollectedMarketFeesInfo.set(totalFees);
 
-  let feesForPeriod = await getOrCreateCollectedMarketFees(
+  let feesFor1hPeriod = await getOrCreateCollectedMarketFees(
     marketAddress,
     transaction.timestamp,
     "1h",
@@ -202,7 +202,7 @@ export async function saveCollectedMarketFees(
 
   updateCollectedFeesFractions(
     poolValue,
-    feesForPeriod,
+    feesFor1hPeriod,
     totalFees,
     feeUsdForPool,
     marketTokensSupply,
@@ -210,15 +210,43 @@ export async function saveCollectedMarketFees(
     context
   );
 
-  feesForPeriod = {
-    ...feesForPeriod,
+  feesFor1hPeriod = {
+    ...feesFor1hPeriod,
     cummulativeFeeUsdForPool: totalFees.cummulativeFeeUsdForPool,
-    feeUsdForPool: BigInt(
-      Number(feesForPeriod.feeUsdForPool) + Number(feeUsdForPool)
-    ),
+    feeUsdForPool:
+      BigInt(feesFor1hPeriod.feeUsdForPool.toString()) +
+      BigInt(feeUsdForPool.toString()),
   };
 
-  context.CollectedMarketFeesInfo.set(feesForPeriod);
+  context.CollectedMarketFeesInfo.set(feesFor1hPeriod);
+
+  let feesFor1dPeriod = await getOrCreateCollectedMarketFees(
+    marketAddress,
+    transaction.timestamp,
+    "1d",
+    chainId,
+    context
+  );
+
+  updateCollectedFeesFractions(
+    poolValue,
+    feesFor1dPeriod,
+    totalFees,
+    feeUsdForPool,
+    marketTokensSupply,
+    prevCumulativeFeeUsdPerGmToken,
+    context
+  );
+
+  feesFor1dPeriod = {
+    ...feesFor1dPeriod,
+    cummulativeFeeUsdForPool: totalFees.cummulativeFeeUsdForPool,
+    feeUsdForPool:
+      BigInt(feesFor1dPeriod.feeUsdForPool.toString()) +
+      BigInt(feeUsdForPool.toString()),
+  };
+
+  context.CollectedMarketFeesInfo.set(feesFor1dPeriod);
 }
 
 function updateCollectedFeesFractions(

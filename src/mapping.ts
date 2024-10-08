@@ -11,7 +11,7 @@ import {
   saveMarketIncentivesStat,
   saveUserGlpGmMigrationStatGlpData,
   saveUserGlpGmMigrationStatGmData,
-  saveUserMarketInfo,
+  saveLiquidityProviderInfo,
 } from "./entities/incentives/liquidityIncentives";
 import { saveDistribution } from "./entities/distributions";
 import { getIdFromEvent, getOrCreateTransaction } from "./entities/common";
@@ -32,8 +32,10 @@ import {
   MarketTokenTemplate,
   MarketTokenTemplate_Transfer_contractRegister,
   MarketTokenTemplate_Transfer_handler,
+  GlvTokenTemplate_Transfer_handler,
   Vault,
   Vault_SellUSDG_handler,
+  GlvTokenTemplate_Transfer_contractRegister,
 } from "generated/src/Handlers.gen";
 import {
   EventLog1Item,
@@ -203,6 +205,60 @@ BatchSenderNew_BatchSend_handler(async ({ event, context }) => {
   }
 });
 
+GlvTokenTemplate_Transfer_handler(async ({ event, context }) => {
+  let glvAddress = event.srcAddress.toString();
+  let from = event.params.from.toString();
+  let to = event.params.to.toString();
+  let value = event.params.value;
+
+  // `from` user redeems or transfers out GLV tokens
+  if (from != ADDRESS_ZERO) {
+    // LiquidityProviderIncentivesStat "should" be updated before LiquidityProviderInfo
+    saveLiquidityProviderIncentivesStat(
+      from,
+      glvAddress,
+      "Glv",
+      "1w",
+      value * BigInt(-1),
+      event.block.timestamp,
+      event.chainId,
+      context
+    );
+
+    saveLiquidityProviderInfo(
+      from,
+      glvAddress,
+      "Glv",
+      value * BigInt(-1),
+      event.chainId,
+      context
+    );
+  }
+
+  // `to` user receives GLV Tokens
+  if (to != ADDRESS_ZERO) {
+    saveLiquidityProviderIncentivesStat(
+      to,
+      glvAddress,
+      "Glv",
+      "1w",
+      value,
+      event.block.timestamp,
+      event.chainId,
+      context
+    );
+
+    saveLiquidityProviderInfo(
+      to,
+      glvAddress,
+      "Glv",
+      value,
+      event.chainId,
+      context
+    );
+  }
+});
+
 MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
   let marketAddress = event.srcAddress.toString();
   let from = event.params.from.toString();
@@ -215,6 +271,7 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
     await saveLiquidityProviderIncentivesStat(
       from,
       marketAddress,
+      "Market",
       "1w",
       value * BigInt(-1),
       event.block.timestamp,
@@ -222,9 +279,10 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       context
     );
 
-    await saveUserMarketInfo(
+    await saveLiquidityProviderInfo(
       from,
       marketAddress,
+      "Market",
       value * BigInt(-1),
       event.chainId,
       context
@@ -249,10 +307,11 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
 
   // `to` user receives GM tokens
   if (to != ADDRESS_ZERO) {
-    // LiquidityProviderIncentivesStat *should* be updated before UserMarketInfo
+    // LiquidityProviderIncentivesStat *should* be updated before LiquidityProviderInfo
     await saveLiquidityProviderIncentivesStat(
       to,
       marketAddress,
+      "Market",
       "1w",
       value,
       event.block.timestamp,
@@ -260,7 +319,14 @@ MarketTokenTemplate_Transfer_handler(async ({ event, context }) => {
       context
     );
 
-    await saveUserMarketInfo(to, marketAddress, value, event.chainId, context);
+    await saveLiquidityProviderInfo(
+      to,
+      marketAddress,
+      "Market",
+      value,
+      event.chainId,
+      context
+    );
 
     let transaction = await getOrCreateTransaction(
       event,
@@ -421,6 +487,20 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
     return;
   }
 
+  if (eventName == "GlvCreated") {
+    // saveMarketInfo(eventData);
+    context.log.warn(
+      `block number: ${event.block.number} tx hash: ${event.transaction.hash}`
+    );
+
+    let glvToken = eventData.eventData_addressItems_items[0];
+    context.log.warn(`glv token: ${[glvToken ? glvToken : "undefined"]}`);
+    GlvTokenTemplate_Transfer_contractRegister(({ event, context }) => {
+      context.addGlvTokenTemplate(glvToken);
+    });
+    return;
+  }
+  
   if (eventName == "DepositCreated") {
     await handleDepositCreated(event, eventData, context);
     return;

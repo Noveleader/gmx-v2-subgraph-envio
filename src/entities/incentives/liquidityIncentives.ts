@@ -1,9 +1,9 @@
 import {
   GlpGmMigrationStat,
   LiquidityProviderIncentivesStat,
-  MarketIncentivesStat,
+  IncentivesStat,
   UserGlpGmMigrationStat,
-  UserMarketInfo,
+  LiquidityProviderInfo,
 } from "generated/src/Types.gen";
 import { periodToSeconds, timestampToPeriodStart } from "../../utils/time";
 import { ZERO } from "../../utils/number";
@@ -11,6 +11,7 @@ import { convertAmountToUsd, convertUsdToAmount } from "../prices";
 import { EventLog1Item } from "../../interfaces/interface";
 import { MarketPoolValueUpdatedEventData } from "../../utils/eventData/MarketPoolValueUpdatedEventData";
 import { getMarketInfo } from "../markets";
+import { GlvOrMarketType_t } from "generated/src/db/Enums.gen";
 
 let INCENTIVES_START_TIMESTAMP = 1699401600;
 let ARB_PRECISION = BigInt(10) ** BigInt(18);
@@ -251,7 +252,8 @@ async function _getMaxFeeBasisPointsForRebate(
 
 export async function saveLiquidityProviderIncentivesStat(
   account: string,
-  marketAddress: string,
+  glvOrMarketAddress: string,
+  type: string,
   period: string,
   marketTokenBalanceDelta: BigInt,
   timestamp: number,
@@ -265,7 +267,8 @@ export async function saveLiquidityProviderIncentivesStat(
   let entity: LiquidityProviderIncentivesStat =
     await _getOrCreateLiquidityProviderIncentivesStat(
       account,
-      marketAddress,
+      glvOrMarketAddress,
+      type,
       period,
       timestamp,
       chainId,
@@ -273,9 +276,10 @@ export async function saveLiquidityProviderIncentivesStat(
     );
 
   if (entity.updatedTimestamp == 0) {
-    let userMarketInfo = await _getUserMarketInfo(
+    let liquidityProviderInfo = await _getLiquidityProviderInfo(
       account,
-      marketAddress,
+      glvOrMarketAddress,
+      type,
       chainId,
       context
     );
@@ -284,32 +288,32 @@ export async function saveLiquidityProviderIncentivesStat(
 
     entity = {
       ...entity,
-      cumulativeTimeByMarketTokensBalance:
-        userMarketInfo.marketTokensBalance * timeInSeconds,
-      lastMarketTokensBalance:
-        userMarketInfo.marketTokensBalance +
+      cumulativeTimeByTokensBalance:
+        liquidityProviderInfo.tokensBalance * timeInSeconds,
+      lastTokensBalance:
+        liquidityProviderInfo.tokensBalance +
         BigInt(marketTokenBalanceDelta.toString()),
     };
   } else {
     let timeInSeconds = BigInt(timestamp - entity.updatedTimestamp);
     entity = {
       ...entity,
-      cumulativeTimeByMarketTokensBalance:
-        entity.cumulativeTimeByMarketTokensBalance +
-        entity.lastMarketTokensBalance * timeInSeconds,
-      lastMarketTokensBalance:
-        entity.lastMarketTokensBalance +
+      cumulativeTimeByTokensBalance:
+        entity.cumulativeTimeByTokensBalance +
+        entity.lastTokensBalance * timeInSeconds,
+      lastTokensBalance:
+        entity.lastTokensBalance +
         BigInt(marketTokenBalanceDelta.toString()),
     };
   }
 
   let endTimestamp = entity.timestamp + SECONDS_IN_WEEK;
   let extrapolatedTimeByMarketTokensBalance =
-    entity.lastMarketTokensBalance * BigInt(endTimestamp - timestamp);
+    entity.lastTokensBalance * BigInt(endTimestamp - timestamp);
   entity = {
     ...entity,
-    weightedAverageMarketTokensBalance:
-      entity.cumulativeTimeByMarketTokensBalance +
+    weightedAverageTokensBalance:
+      entity.cumulativeTimeByTokensBalance +
       extrapolatedTimeByMarketTokensBalance / BigInt(SECONDS_IN_WEEK),
     updatedTimestamp: timestamp,
   };
@@ -319,7 +323,8 @@ export async function saveLiquidityProviderIncentivesStat(
 
 async function _getOrCreateLiquidityProviderIncentivesStat(
   account: string,
-  marketAddress: string,
+  glvOrMarketAddress: string,
+  type: string,
   period: string,
   timestamp: number,
   chainId: number,
@@ -329,7 +334,7 @@ async function _getOrCreateLiquidityProviderIncentivesStat(
   let id =
     account +
     ":" +
-    marketAddress +
+    glvOrMarketAddress +
     ":" +
     period +
     ":" +
@@ -345,58 +350,38 @@ async function _getOrCreateLiquidityProviderIncentivesStat(
       timestamp: startTimestamp,
       period: period,
       account: account,
-      marketAddress: marketAddress,
+      glvOrMarketAddress: glvOrMarketAddress,
+      typeGm: _mapGlvOrMarketType(type),
       updatedTimestamp: 0,
-      lastMarketTokensBalance: ZERO,
-      cumulativeTimeByMarketTokensBalance: ZERO,
-      weightedAverageMarketTokensBalance: ZERO,
+      lastTokensBalance: ZERO,
+      cumulativeTimeByTokensBalance: ZERO,
+      weightedAverageTokensBalance: ZERO,
     };
   }
 
   return entity!;
 }
 
-async function _getUserMarketInfo(
+export async function saveLiquidityProviderInfo(
   account: string,
-  marketAddress: string,
-  chainId: number,
-  context: any
-): Promise<UserMarketInfo> {
-  let id = account + ":" + marketAddress;
-  let entity: UserMarketInfo | undefined = context.UserMarketInfo.get(id);
-
-  if (entity == undefined) {
-    entity = {
-      id: id,
-      chainId: chainId,
-      marketTokensBalance: ZERO,
-      account: account,
-      marketAddress: marketAddress,
-    };
-  }
-
-  return entity!;
-}
-
-export async function saveUserMarketInfo(
-  account: string,
-  marketAddress: string,
-  marketTokensDelta: BigInt,
+  glvOrMarketAddress: string,
+  type: string,
+  tokensDelta: BigInt,
   chainId: number,
   context: any
 ): Promise<void> {
-  let entity: UserMarketInfo = await _getUserMarketInfo(
+  let entity = await _getLiquidityProviderInfo(
     account,
-    marketAddress,
+    glvOrMarketAddress,
+    type,
     chainId,
     context
   );
   entity = {
     ...entity,
-    marketTokensBalance:
-      entity.marketTokensBalance + BigInt(marketTokensDelta.toString()),
+    tokensBalance: entity.tokensBalance + BigInt(tokensDelta.toString()),
   };
-  context.UserMarketInfo.set(entity);
+  context.LiquidityProviderInfo.set(entity);
 }
 
 export async function saveUserGlpGmMigrationStatGmData(
@@ -471,8 +456,9 @@ export async function saveMarketIncentivesStat(
   let data = new MarketPoolValueUpdatedEventData(eventData);
 
   let marketAddress = data.market;
-  let entity = await _getOrCreateMarketIncentivesStat(
+  let entity = await _getOrCreateIncentivesStat(
     marketAddress,
+    "Market",
     event.block.timestamp,
     chainId,
     context
@@ -480,62 +466,83 @@ export async function saveMarketIncentivesStat(
 
   if (entity.updatedTimestamp == 0) {
     // new entity was created
-    // interpolate cumulative time * marketTokensBalance starting from the beginning of the period
+    // interpolate cumulative time * tokensBalance starting from the beginning of the period
 
     let marketInfo = await getMarketInfo(marketAddress, chainId, context);
-    let lastMarketTokensSupply =
+    let lastTokensSupply =
       marketInfo.marketTokensSupplyFromPoolUpdated == undefined
         ? marketInfo.marketTokensSupply
         : marketInfo.marketTokensSupplyFromPoolUpdated;
     let timeInSeconds = event.block.timestamp - entity.timestamp;
     entity = {
       ...entity,
-      cumulativeTimeByMarketTokensSupply:
-        lastMarketTokensSupply * BigInt(timeInSeconds),
+      cumulativeTimeByTokensSupply: lastTokensSupply * BigInt(timeInSeconds),
     };
   } else {
     let timeInSeconds = event.block.timestamp - entity.updatedTimestamp;
     entity = {
       ...entity,
-      cumulativeTimeByMarketTokensSupply:
-        entity.cumulativeTimeByMarketTokensSupply +
-        entity.lastMarketTokensSupply * BigInt(timeInSeconds),
+      cumulativeTimeByTokensSupply:
+        entity.cumulativeTimeByTokensSupply +
+        entity.lastTokensSupply * BigInt(timeInSeconds),
     };
   }
 
   entity = {
     ...entity,
-    lastMarketTokensSupply: BigInt(data.marketTokensSupply.toString()),
+    lastTokensSupply: BigInt(data.marketTokensSupply.toString()),
     updatedTimestamp: event.block.timestamp,
   };
 
   let endTimestamp = entity.timestamp + SECONDS_IN_WEEK;
   let extrapolatedTimeByMarketTokensSupply =
-    entity.lastMarketTokensSupply * BigInt(endTimestamp) -
-    event.block.timestamp;
+    entity.lastTokensSupply * BigInt(endTimestamp) - event.block.timestamp;
 
   entity = {
     ...entity,
-    weightedAverageMarketTokensSupply:
-      entity.cumulativeTimeByMarketTokensSupply +
+    weightedAverageTokensSupply:
+      entity.cumulativeTimeByTokensSupply +
       extrapolatedTimeByMarketTokensSupply / BigInt(SECONDS_IN_WEEK),
   };
 
-  context.MarketIncentivesStat.set(entity);
+  context.IncentivesStat.set(entity);
 }
 
-async function _getOrCreateMarketIncentivesStat(
-  marketAddress: string,
+async function _getLiquidityProviderInfo(
+  account: string,
+  glvOrMarketAddress: string,
+  type: string,
+  chainId: number,
+  context: any
+): Promise<LiquidityProviderInfo> {
+  let id = account + ":" + glvOrMarketAddress;
+  let entity: LiquidityProviderInfo | undefined =
+    await context.LiquidityProviderInfo.get(id);
+  if (entity == undefined) {
+    entity = {
+      id: id,
+      chainId: chainId,
+      tokensBalance: ZERO,
+      account: account,
+      glvOrMarketAddress: glvOrMarketAddress,
+      typeGm: _mapGlvOrMarketType(type),
+    };
+  }
+  return entity!;
+}
+
+async function _getOrCreateIncentivesStat(
+  glvOrMarketAddress: string,
+  type: string,
   timestamp: number,
   chainId: number,
   context: any
-): Promise<MarketIncentivesStat> {
+): Promise<IncentivesStat> {
   let period = "1w";
   let startTimestamp = timestampToPeriodStart(timestamp, period);
-  let id = marketAddress + ":" + period + ":" + startTimestamp.toString();
+  let id = glvOrMarketAddress + ":" + period + ":" + startTimestamp.toString();
 
-  let entity: MarketIncentivesStat | undefined =
-    await context.MarketIncentivesStat.get(id);
+  let entity: IncentivesStat | undefined = await context.IncentivesStat.get(id);
 
   if (entity == undefined) {
     entity = {
@@ -543,14 +550,26 @@ async function _getOrCreateMarketIncentivesStat(
       chainId: chainId,
       timestamp: startTimestamp,
       period: period,
-      marketAddress: marketAddress,
+      glvOrMarketAddress: glvOrMarketAddress,
+      typeGm: _mapGlvOrMarketType(type),
 
       updatedTimestamp: 0,
-      lastMarketTokensSupply: ZERO,
-      cumulativeTimeByMarketTokensSupply: ZERO,
-      weightedAverageMarketTokensSupply: ZERO,
+      lastTokensSupply: ZERO,
+      cumulativeTimeByTokensSupply: ZERO,
+      weightedAverageTokensSupply: ZERO,
     };
   }
 
   return entity;
+}
+
+function _mapGlvOrMarketType(actionType: string): GlvOrMarketType_t {
+  switch (actionType.toLowerCase()) {
+    case "glv":
+      return "Glv";
+    case "market":
+      return "Market";
+    default:
+      throw new Error(`Invalid GlvOrMarketType: ${actionType}`);
+  }
 }

@@ -10,6 +10,7 @@ import { CollateralClaimedEventData } from "../utils/eventData/CollateralClaimed
 import { ClaimActionType_t } from "generated/src/db/Enums.gen";
 import { EventLog1Item, EventLog2Item } from "../interfaces/interface";
 import { orderTypes } from "./orders";
+import { getTokenPrice } from "./prices";
 
 export async function handleCollateralClaimAction(
   eventName: string,
@@ -35,14 +36,16 @@ export async function handleCollateralClaimAction(
     context
   );
 
-  let claimActionUpdated = addFieldsToCollateralLikeClaimAction(
+  let claimActionUpdated = await addFieldsToCollateralLikeClaimAction(
     claimAction,
-    data
+    data,
+    context
   );
 
-  let claimCollateralActionUpdated = addFieldsToCollateralLikeClaimAction(
+  let claimCollateralActionUpdated = await addFieldsToCollateralLikeClaimAction(
     claimCollateralAction as ClaimAction,
-    data
+    data,
+    context
   );
 
   context.ClaimAction.set(claimActionUpdated);
@@ -88,7 +91,7 @@ export async function saveClaimableFundingFeeInfo(
 
   context.ClaimableFundingFeeInfo.set(entity);
 
-  return entity;
+  return entity!;
 }
 
 export function isFundingFeeSettleOrder(order: Order): boolean {
@@ -111,7 +114,7 @@ export async function saveClaimActionOnOrderCreated(
 
   let eventDataBoolItemsItems = eventData.eventData_boolItems_items;
 
-  let orderId = eventDataBytes32ItemsItems[0];
+  let orderId = eventDataBytes32ItemsItems[0]!;
 
   let claimAction = await getOrCreateClaimAction(
     "SettleFundingFeeCreated",
@@ -121,14 +124,17 @@ export async function saveClaimActionOnOrderCreated(
     context
   );
 
-  let marketAddress = eventDataAddressItemsItems[4];
+  let marketAddress = eventDataAddressItemsItems[4]!;
   let marketAddresses = claimAction.marketAddresses;
   marketAddresses.push(marketAddress);
 
-  let isLong = eventDataBoolItemsItems[0];
+  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
   let isLongOrders = claimAction.isLongOrders;
-  isLongOrders.push(Boolean(isLong));
-  
+  if (typeof isLongOrders == "boolean") {
+    isLongOrders = [isLongOrders];
+  }
+  isLongOrders.push(isLong);
+
   claimAction = {
     ...claimAction,
     marketAddresses: marketAddresses,
@@ -164,6 +170,9 @@ export async function saveClaimActionOnOrderCancelled(
   marketAddresses.push(order.marketAddress);
 
   let isLongOrders = claimAction.isLongOrders;
+  if (typeof isLongOrders == "boolean") {
+    isLongOrders = [isLongOrders];
+  }
   isLongOrders.push(Boolean(order.isLong));
 
   claimAction = {
@@ -216,9 +225,15 @@ export async function saveClaimActionOnOrderExecuted(
     let sourceTokenAddress = sourceTokenAddresses[i];
     let targetTokenAddresses = claimAction.tokenAddresses;
     targetTokenAddresses.push(sourceTokenAddress);
+
+    let tokenPrice = await getTokenPrice(sourceTokenAddress, context);
+    let tokenPrices = claimAction.tokenPrices;
+    tokenPrices.push(BigInt(tokenPrice.toString()));
+
     claimAction = {
       ...claimAction,
       tokenAddresses: targetTokenAddresses,
+      tokenPrices: tokenPrices,
     };
   }
 
@@ -238,6 +253,9 @@ export async function saveClaimActionOnOrderExecuted(
   let tokensCount = claimableFundingFeeInfo.tokenAddresses.length;
   let marketAddresses = claimAction.marketAddresses;
   let isLongOrders = claimAction.isLongOrders;
+  if (typeof isLongOrders == "boolean") {
+    isLongOrders = [isLongOrders];
+  }
 
   for (let i = 0; i < tokensCount; i++) {
     marketAddresses.push(order.marketAddress);
@@ -310,7 +328,7 @@ async function getOrCreateClaimAction(
   context: any
 ): Promise<ClaimAction> {
   let eventDataAddressItemsItems = eventData.eventData_addressItems_items;
-  let account: string = eventDataAddressItemsItems[2];
+  let account: string = eventDataAddressItemsItems[2]!;
 
   let id = transaction.id + ":" + account + ":" + eventName;
   let entity: ClaimAction | undefined = await context.ClaimAction.get(id);
@@ -324,35 +342,41 @@ async function getOrCreateClaimAction(
       amounts: new Array<bigint>(0),
       isLongOrders: new Array<boolean>(0),
       tokenPrices: new Array<bigint>(0),
+
       eventName: _mapClaimActionType(eventName),
       account: account,
       transaction_id: transaction.id,
     };
-  }
 
-  context.ClaimAction.set(entity);
+    context.ClaimAction.set(entity);
+  }
 
   return entity as ClaimAction;
 }
 
-function addFieldsToCollateralLikeClaimAction(
+async function addFieldsToCollateralLikeClaimAction(
   claimAction: ClaimAction,
-  eventData: CollateralClaimedEventData
-): ClaimAction {
+  eventData: CollateralClaimedEventData,
+  context: any
+): Promise<ClaimAction> {
   let marketAddress = claimAction.marketAddresses;
   marketAddress.push(eventData.market);
 
   let tokenAddresses = claimAction.tokenAddresses;
   tokenAddresses.push(eventData.token);
-  claimAction = {
-    ...claimAction,
-    tokenAddresses: tokenAddresses,
-  };
+
+  let tokenPrices = claimAction.tokenPrices;
+  let tokenPrice = await getTokenPrice(eventData.token, context);
+  tokenPrices.push(BigInt(tokenPrice.toString()));
 
   let amounts = claimAction.amounts;
   amounts.push(BigInt(Number(eventData.amount)));
+
   claimAction = {
     ...claimAction,
+    marketAddresses: marketAddress,
+    tokenAddresses: tokenAddresses,
+    tokenPrices: tokenPrices,
     amounts: amounts,
   };
 
