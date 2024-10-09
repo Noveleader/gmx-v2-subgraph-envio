@@ -130,7 +130,7 @@ export async function saveClaimActionOnOrderCreated(
 
   let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders == "boolean") {
+  if (typeof isLongOrders === "boolean") {
     isLongOrders = [isLongOrders];
   }
   isLongOrders.push(isLong);
@@ -170,7 +170,7 @@ export async function saveClaimActionOnOrderCancelled(
   marketAddresses.push(order.marketAddress);
 
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders == "boolean") {
+  if (typeof isLongOrders === "boolean") {
     isLongOrders = [isLongOrders];
   }
   isLongOrders.push(Boolean(order.isLong));
@@ -253,7 +253,7 @@ export async function saveClaimActionOnOrderExecuted(
   let tokensCount = claimableFundingFeeInfo.tokenAddresses.length;
   let marketAddresses = claimAction.marketAddresses;
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders == "boolean") {
+  if (typeof isLongOrders === "boolean") {
     isLongOrders = [isLongOrders];
   }
 
