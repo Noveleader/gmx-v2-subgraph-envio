@@ -222,9 +222,9 @@ export function saveOrder(
   let updatedAtBlock: BigInt = BigInt(eventDataUintItemsItems[9]);
   let orderType: BigInt = BigInt(eventDataUintItemsItems[0]);
 
-  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
-  let shouldUnwrapNativeToken: boolean = Boolean(eventDataBoolItemsItems[1]);
-  let isFrozen: boolean = Boolean(eventDataBoolItemsItems[2]);
+  let isLong: boolean = eventDataBoolItemsItems[0] === "true" ? true : false;
+  let shouldUnwrapNativeToken: boolean = eventDataBoolItemsItems[1] === "true" ? true : false;
+  let isFrozen: boolean = eventDataBoolItemsItems[2] === "true" ? true : false;
 
   let order: Order = {
     id: key,

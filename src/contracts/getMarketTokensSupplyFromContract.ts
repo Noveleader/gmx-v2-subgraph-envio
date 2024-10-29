@@ -21,7 +21,7 @@ export async function getMarketTokensSupplyFromContract(
   );
 
   if (marketTokenSupplyCached) {
-    context.log.info(`Returning Data from cache for key: ${id}`);
+    // context.log.info(`Returning Data from cache for key: ${id}`);
     return BigInt(marketTokenSupplyCached);
   }
 
@@ -37,7 +37,7 @@ export async function getMarketTokensSupplyFromContract(
       blockNumber: BigInt(blockNumber),
     })) as BigInt;
 
-    context.log.info(`The market tokens supply is ${res}`);
+    // context.log.info(`The market tokens supply is ${res}`);
     await marketTokensSupplyCache.add(id, res.toString(), chainId, blockNumber);
   } catch (e) {
     const error = e as GetBlockNumberErrorType;

@@ -96,10 +96,12 @@ export async function saveClaimableFundingFeeInfo(
 
 export function isFundingFeeSettleOrder(order: Order): boolean {
   return (
-    order.initialCollateralDeltaAmount == BigInt(1) &&
-    order.sizeDeltaUsd == BigInt(0) &&
+    order.initialCollateralDeltaAmount === BigInt(1) &&
+    order.sizeDeltaUsd === BigInt(0) &&
     order.orderType == orderTypes.get("MarketDecrease")
   );
+  // return true;
+
 }
 
 export async function saveClaimActionOnOrderCreated(
@@ -128,11 +130,8 @@ export async function saveClaimActionOnOrderCreated(
   let marketAddresses = claimAction.marketAddresses;
   marketAddresses.push(marketAddress);
 
-  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let isLong: boolean = (eventDataBoolItemsItems[0] == "true") ? true : false;
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders === "boolean") {
-    isLongOrders = [isLongOrders];
-  }
   isLongOrders.push(isLong);
 
   claimAction = {
@@ -170,10 +169,8 @@ export async function saveClaimActionOnOrderCancelled(
   marketAddresses.push(order.marketAddress);
 
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders === "boolean") {
-    isLongOrders = [isLongOrders];
-  }
-  isLongOrders.push(Boolean(order.isLong));
+  let isLong: boolean = order.isLong === "true" ? true : false;
+  isLongOrders.push(isLong);
 
   claimAction = {
     ...claimAction,
@@ -253,13 +250,11 @@ export async function saveClaimActionOnOrderExecuted(
   let tokensCount = claimableFundingFeeInfo.tokenAddresses.length;
   let marketAddresses = claimAction.marketAddresses;
   let isLongOrders = claimAction.isLongOrders;
-  if (typeof isLongOrders === "boolean") {
-    isLongOrders = [isLongOrders];
-  }
 
   for (let i = 0; i < tokensCount; i++) {
     marketAddresses.push(order.marketAddress);
-    isLongOrders.push(Boolean(order.isLong));
+    let isLong: boolean = order.isLong === "true" ? true : false;
+    isLongOrders.push(isLong);
   }
 
   claimAction = {

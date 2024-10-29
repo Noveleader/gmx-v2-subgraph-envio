@@ -29,7 +29,7 @@ export async function getMarketPoolValueFromContract(
   );
 
   if (poolValueCached) {
-    context.log.info(`Returning Data from cache for key: ${id}`);
+    // context.log.info(`Returning Data from cache for key: ${id}`);
     return BigInt(poolValueCached);
   }
 
@@ -85,9 +85,9 @@ export async function getMarketPoolValueFromContract(
 
     poolValue = tx[1].poolValue;
 
-    context.log.info(
-      `Pool Value is ${poolValue} for the block ${transaction.blockNumber} for these market args: ${marketArg}`
-    );
+    // context.log.info(
+    //   `Pool Value is ${poolValue} for the block ${transaction.blockNumber} for these market args: ${marketArg}`
+    // );
 
     await poolValueCache.add(
       id,

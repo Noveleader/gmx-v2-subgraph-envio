@@ -50,7 +50,7 @@ export function savePositionIncrease(
   let basePnlUsd: BigInt = BigInt(0);
 
   let orderType: BigInt = BigInt(eventDataUintItemsItems[14]);
-  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let isLong: boolean = eventDataBoolItemsItems[0] === "true" ? true : false;
 
   let entity: PositionIncrease = {
     id: orderKey,
@@ -133,7 +133,7 @@ export function savePositionDecrease(
   let priceImpactAmount: BigInt = BigInt(0);
   let basePnlUsd: BigInt = BigInt(eventDataIntItemsItems[1]);
   let orderType: BigInt = BigInt(eventDataUintItemsItems[16]);
-  let isLong: boolean = Boolean(eventDataBoolItemsItems[0]);
+  let isLong: boolean = eventDataBoolItemsItems[0] === "true" ? true : false;
 
   let entity: PositionDecrease = {
     id: orderKey,
