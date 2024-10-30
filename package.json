@@ -23,7 +23,7 @@
   "dependencies": {
     "chai": "4.3.10",
     "dotenv": "16.4.5",
-    "envio": "^2.1.2",
+    "envio": "2.6.1",
     "ethers": "6.8.0",
     "sqlite3": "^5.1.7",
     "viem": "1.16.6"

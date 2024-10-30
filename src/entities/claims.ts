@@ -129,8 +129,8 @@ export async function saveClaimActionOnOrderCreated(
   let marketAddress = eventDataAddressItemsItems[4]!;
   let marketAddresses = claimAction.marketAddresses;
   marketAddresses.push(marketAddress);
-
-  let isLong: boolean = (eventDataBoolItemsItems[0] == "true") ? true : false;
+  
+  let isLong:string = eventDataBoolItemsItems[0]
   let isLongOrders = claimAction.isLongOrders;
   isLongOrders.push(isLong);
 
@@ -169,7 +169,7 @@ export async function saveClaimActionOnOrderCancelled(
   marketAddresses.push(order.marketAddress);
 
   let isLongOrders = claimAction.isLongOrders;
-  let isLong: boolean = order.isLong === "true" ? true : false;
+  let isLong: string = order.isLong 
   isLongOrders.push(isLong);
 
   claimAction = {
@@ -253,7 +253,7 @@ export async function saveClaimActionOnOrderExecuted(
 
   for (let i = 0; i < tokensCount; i++) {
     marketAddresses.push(order.marketAddress);
-    let isLong: boolean = order.isLong === "true" ? true : false;
+    let isLong: string = order.isLong
     isLongOrders.push(isLong);
   }
 
@@ -335,7 +335,7 @@ async function getOrCreateClaimAction(
       marketAddresses: new Array<string>(0),
       tokenAddresses: new Array<string>(0),
       amounts: new Array<bigint>(0),
-      isLongOrders: new Array<boolean>(0),
+      isLongOrders: new Array<string>(0),
       tokenPrices: new Array<bigint>(0),
 
       eventName: _mapClaimActionType(eventName),
