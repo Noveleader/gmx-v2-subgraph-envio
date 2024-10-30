@@ -1,3 +1,5 @@
+
+import {EventEmitter} from "generated"
 import {
   ClaimRef,
   DepositRef,
@@ -23,19 +25,16 @@ import {
 } from "./entities/markets";
 import {
   BatchSender_BatchSend_handler,
-  BatchSenderNew_BatchSend_handler,
-  EventEmitter_EventLog1_contractRegister,
+  BatchSenderNew_BatchSend_handler,  
   EventEmitter_EventLog1_handler,
   EventEmitter_EventLog2_handler,
   EventEmitter_EventLog_handler,
   GlpManager_RemoveLiquidity_handler,
-  MarketTokenTemplate,
-  MarketTokenTemplate_Transfer_contractRegister,
+  MarketTokenTemplate,  
   MarketTokenTemplate_Transfer_handler,
   GlvTokenTemplate_Transfer_handler,
   Vault,
-  Vault_SellUSDG_handler,
-  GlvTokenTemplate_Transfer_contractRegister,
+  Vault_SellUSDG_handler,  
 } from "generated/src/Handlers.gen";
 import {
   EventLog1Item,
@@ -423,6 +422,29 @@ EventEmitter_EventLog_handler(async ({ event, context }) => {
   }
 });
 
+EventEmitter.EventLog1.contractRegister(({ event, context }) => {
+  let eventName = event.params.eventName;
+  let eventDataRel = event.params.eventData[0][0]
+  .map((item) => item[1])
+  .flat()
+if (eventName == "GlvCreated") {  
+
+  let glvToken =  eventDataRel[0]
+  
+    context.addGlvTokenTemplate(glvToken);
+}
+if (eventName == "MarketCreated") {
+  
+     context.addMarketTokenTemplate(eventDataRel[0]);
+  
+  return;
+}
+
+},
+{
+  preRegisterDynamicContracts: true
+})
+
 EventEmitter_EventLog1_handler(async ({ event, context }) => {
   let eventName = event.params.eventName;
   let eventData: EventLog1Item = {
@@ -479,27 +501,7 @@ EventEmitter_EventLog1_handler(async ({ event, context }) => {
   };
   let eventId = getIdFromEvent(event);
 
-  if (eventName == "MarketCreated") {
-    await saveMarketInfo(eventData, event.chainId, context);
-    // MarketTokenTemplate_Transfer_contractRegister(({ event, context }) => {
-    //   context.addMarketTokenTemplate(eventData.eventData_addressItems_items[0]);
-    // });
-    return;
-  }
 
-  if (eventName == "GlvCreated") {
-    // saveMarketInfo(eventData);
-    context.log.warn(
-      `block number: ${event.block.number} tx hash: ${event.transaction.hash}`
-    );
-
-    let glvToken = eventData.eventData_addressItems_items[0];
-    context.log.warn(`glv token: ${[glvToken ? glvToken : "undefined"]}`);
-    GlvTokenTemplate_Transfer_contractRegister(({ event, context }) => {
-      context.addGlvTokenTemplate(glvToken);
-    });
-    return;
-  }
   
   if (eventName == "DepositCreated") {
     await handleDepositCreated(event, eventData, context);
